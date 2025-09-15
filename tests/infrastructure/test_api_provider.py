@@ -4,6 +4,7 @@ from http import HTTPStatus
 from unittest import mock
 
 import pytest
+
 from rana_process_sdk.infrastructure import ApiException, ApiProvider
 
 MODULE = "rana_process_sdk.infrastructure.api_provider"
@@ -87,7 +88,9 @@ def test_timeout(api_provider: ApiProvider):
     assert api_provider._pool.request.call_args[1]["timeout"] == 2.1
 
 
-@pytest.mark.parametrize("status", [HTTPStatus.OK, HTTPStatus.NOT_FOUND, HTTPStatus.INTERNAL_SERVER_ERROR])
+@pytest.mark.parametrize(
+    "status", [HTTPStatus.OK, HTTPStatus.NOT_FOUND, HTTPStatus.INTERNAL_SERVER_ERROR]
+)
 def test_unexpected_content_type(api_provider: ApiProvider, response, status):
     response.status = int(status)
     response.headers["Content-Type"] = "text/plain"
@@ -144,7 +147,10 @@ def test_trailing_slash(api_provider: ApiProvider, path, trailing_slash, expecte
     api_provider._trailing_slash = trailing_slash
     api_provider.request("GET", path)
 
-    assert api_provider._pool.request.call_args[1]["url"] == "http://testserver/foo/" + expected
+    assert (
+        api_provider._pool.request.call_args[1]["url"]
+        == "http://testserver/foo/" + expected
+    )
 
 
 def test_custom_header(api_provider: ApiProvider):
@@ -190,7 +196,9 @@ def test_post_raw_body(api_provider: ApiProvider, response):
 def test_post_multiple_data(api_provider: ApiProvider, response, body, json, fields):
     response.status == int(HTTPStatus.CREATED)
     api_provider._pool.request.return_value = response
-    with pytest.raises(ValueError, match="Cannot specify more than one of 'body', 'json', or 'fields'"):
+    with pytest.raises(
+        ValueError, match="Cannot specify more than one of 'body', 'json', or 'fields'"
+    ):
         api_provider.request("POST", "bar", body=body, json=json, fields=fields)
 
     assert api_provider._pool.request.call_count == 0

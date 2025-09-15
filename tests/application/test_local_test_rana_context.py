@@ -4,6 +4,7 @@ from unittest.mock import Mock, PropertyMock, patch
 
 from pydantic import ValidationError
 from pytest import fixture, raises
+
 from rana_process_sdk import (
     Directory,
     File,
@@ -66,7 +67,9 @@ class MultipleFileOutput(RanaProcessParameters):
 @fixture
 def threedi_api_key_gateway() -> Iterator[Mock]:
     with patch.object(
-        PrefectRanaContext, "_threedi_api_key_gateway", new_callable=PropertyMock(ThreediApiKeyGateway)
+        PrefectRanaContext,
+        "_threedi_api_key_gateway",
+        new_callable=PropertyMock(ThreediApiKeyGateway),
     ) as m:
         yield m
 
@@ -74,21 +77,29 @@ def threedi_api_key_gateway() -> Iterator[Mock]:
 @fixture
 def rana_schematisation_gateway() -> Iterator[Mock]:
     with patch.object(
-        PrefectRanaContext, "_rana_schematisation_gateway", new_callable=PropertyMock(RanaSchematisationGateway)
+        PrefectRanaContext,
+        "_rana_schematisation_gateway",
+        new_callable=PropertyMock(RanaSchematisationGateway),
     ) as m:
         yield m
 
 
 @fixture
 def rana_dataset_gateway() -> Iterator[Mock]:
-    with patch.object(PrefectRanaContext, "_rana_dataset_gateway", new_callable=PropertyMock(RanaDatasetGateway)) as m:
+    with patch.object(
+        PrefectRanaContext,
+        "_rana_dataset_gateway",
+        new_callable=PropertyMock(RanaDatasetGateway),
+    ) as m:
         yield m
 
 
 @fixture
 def lizard_raster_layer_gateway() -> Iterator[Mock]:
     with patch.object(
-        PrefectRanaContext, "lizard_raster_layer_gateway", new_callable=PropertyMock(LizardRasterLayerGateway)
+        PrefectRanaContext,
+        "lizard_raster_layer_gateway",
+        new_callable=PropertyMock(LizardRasterLayerGateway),
     ) as m:
         yield m
 
@@ -100,7 +111,9 @@ def base_rana_context() -> RanaContext[Output]:
 
 @fixture
 def rana_runtime() -> Iterator[Mock]:
-    with patch.object(RanaContext, "_rana_runtime", new_callable=PropertyMock(RanaRuntime)) as m:
+    with patch.object(
+        RanaContext, "_rana_runtime", new_callable=PropertyMock(RanaRuntime)
+    ) as m:
         yield m
 
 
@@ -119,7 +132,9 @@ def local_test_rana_runtime() -> Iterator[Mock]:
 
 @fixture
 def file_gateway() -> Iterator[Mock]:
-    with patch.object(PrefectRanaContext, "_file_gateway", new_callable=PropertyMock(RanaFileGateway)) as m:
+    with patch.object(
+        PrefectRanaContext, "_file_gateway", new_callable=PropertyMock(RanaFileGateway)
+    ) as m:
         yield m
 
 
@@ -163,7 +178,9 @@ def raster_base_rana_context() -> RanaContext[RasterOutput]:
 
 
 def test_base_rana_context_set_output(
-    local_test_rana_runtime: Mock, base_rana_context: RanaContext[Output], rana_runtime: Mock
+    local_test_rana_runtime: Mock,
+    base_rana_context: RanaContext[Output],
+    rana_runtime: Mock,
 ):
     base_rana_context.set_output(Output(number=3))
 
@@ -171,14 +188,18 @@ def test_base_rana_context_set_output(
 
 
 def test_base_rana_context_set_output_with_dict(
-    local_test_rana_runtime: Mock, base_rana_context: RanaContext[Output], rana_runtime: Mock
+    local_test_rana_runtime: Mock,
+    base_rana_context: RanaContext[Output],
+    rana_runtime: Mock,
 ):
     base_rana_context.set_output({"number": 3})
 
     rana_runtime.set_result.assert_called_once_with({"number": 3})
 
 
-def test_base_rana_context_set_output_bad_dict(local_test_rana_runtime: Mock, base_rana_context: RanaContext[Output]):
+def test_base_rana_context_set_output_bad_dict(
+    local_test_rana_runtime: Mock, base_rana_context: RanaContext[Output]
+):
     with raises(ValidationError):
         base_rana_context.set_output({})
 
@@ -210,7 +231,9 @@ def test_init_with_extra_output_path():
 
 def test_init_with_duplicate_output_paths():
     with raises(ValueError, match="Output paths parameters should be unique"):
-        PrefectRanaContext[MultipleFileOutput](output_paths={"x": "dem.tif", "y": "dem.tif"})
+        PrefectRanaContext[MultipleFileOutput](
+            output_paths={"x": "dem.tif", "y": "dem.tif"}
+        )
 
 
 def test_init_with_directory_path():
@@ -233,7 +256,9 @@ def test_init_with_empty_optional_output_path():
     assert actual.output_paths == {}
 
 
-def test_get_file_stat(file_gateway: Mock, rana_context: PrefectRanaContext, file_stat: FileStat):
+def test_get_file_stat(
+    file_gateway: Mock, rana_context: PrefectRanaContext, file_stat: FileStat
+):
     file_gateway.stat.return_value = file_stat
 
     assert rana_context.get_file_stat(File(id="foo", ref="bar")) == file_stat
@@ -241,7 +266,9 @@ def test_get_file_stat(file_gateway: Mock, rana_context: PrefectRanaContext, fil
     file_gateway.stat.assert_called_once_with("foo", "bar")
 
 
-def test_get_file_stat_none(file_gateway: Mock, rana_context: PrefectRanaContext, file_stat: FileStat):
+def test_get_file_stat_none(
+    file_gateway: Mock, rana_context: PrefectRanaContext, file_stat: FileStat
+):
     file_gateway.stat.return_value = None
 
     with raises(ValueError, match="File at foo does not exist in Rana"):
@@ -269,7 +296,9 @@ def test_download_with_ref(
 
 
 def test_download_already_exists(
-    job_working_dir: Path, file_gateway: RanaFileGateway, rana_context: PrefectRanaContext
+    job_working_dir: Path,
+    file_gateway: RanaFileGateway,
+    rana_context: PrefectRanaContext,
 ):
     pass
 

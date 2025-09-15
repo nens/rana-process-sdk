@@ -61,11 +61,15 @@ def transfer_extension(local_path: Path, rana_path: str) -> str:
 
 def expected_files(path_picker: PathPickerWidget) -> dict[str, FileOutput]:
     expected_files: dict[str, FileOutput] = {}
-    for path, expected_file in cast(DirectoryPickerWidget, path_picker).expected_files.items():
+    for path, expected_file in cast(
+        DirectoryPickerWidget, path_picker
+    ).expected_files.items():
         expected_files[path] = FileOutput(is_optional=True)
         if expected_file:
             expected_files[path] = FileOutput(
-                is_optional=True, data_type=expected_file.data_type, meta_values=expected_file.meta
+                is_optional=True,
+                data_type=expected_file.data_type,
+                meta_values=expected_file.meta,
             )
     return expected_files
 
@@ -78,7 +82,9 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
         from rana_process_sdk import PrefectRanaContext
 
         output_type = cast(type[T], get_args(self.model_fields["output"].annotation)[0])
-        return PrefectRanaContext[output_type](output=self.output, output_paths=self.output_paths)  # type: ignore
+        return PrefectRanaContext[output_type](
+            output=self.output, output_paths=self.output_paths
+        )  # type: ignore
 
     @classmethod
     def get_output_schema(cls) -> Json:
@@ -97,12 +103,17 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
             _optional = is_optional(prop)
             if _optional:
                 if "default" not in prop:
-                    raise ValueError(f"Optional output field '{key}' must have a default value")
+                    raise ValueError(
+                        f"Optional output field '{key}' must have a default value"
+                    )
                 prop = unpack_optional(prop)
                 assert prop is not None
             if path_picker := path_picker_from_json_prop(prop):
                 if isinstance(path_picker, DirectoryPickerWidget):
-                    result[key] = DirectoryOutput(is_optional=_optional, expected_files=expected_files(path_picker))
+                    result[key] = DirectoryOutput(
+                        is_optional=_optional,
+                        expected_files=expected_files(path_picker),
+                    )
                 else:
                     result[key] = FileOutput(
                         is_optional=_optional,
@@ -119,10 +130,16 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
             if key in self.output_paths:
                 output_value = getattr(self.output, key).id
                 if isinstance(path_details, DirectoryOutput):
-                    rana_path = self.upload_dir(Path(output_value), self.output_paths[key], path_details.expected_files)
+                    rana_path = self.upload_dir(
+                        Path(output_value),
+                        self.output_paths[key],
+                        path_details.expected_files,
+                    )
                 else:
                     if path_details.data_type == "threedi_schematisation":
-                        rana_path = self.upload_schematisation(output_value, self.output_paths[key])
+                        rana_path = self.upload_schematisation(
+                            output_value, self.output_paths[key]
+                        )
                     else:
                         rana_path = self.upload(
                             Path(output_value),
@@ -150,9 +167,13 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
             raise ValueError(f"received unexpected output paths {unexpected}")
         # check if paths are actual file paths
         for key, path in value.items():
-            if isinstance(expected[key], DirectoryOutput) and not str(path).endswith("/"):
+            if isinstance(expected[key], DirectoryOutput) and not str(path).endswith(
+                "/"
+            ):
                 raise ValueError(f"output path for '{key}' is not a directory")
-            elif not isinstance(expected[key], DirectoryOutput) and str(path).endswith("/"):
+            elif not isinstance(expected[key], DirectoryOutput) and str(path).endswith(
+                "/"
+            ):
                 raise ValueError(f"output path for '{key}' is not a file")
         paths = list(value.values())
         if len(paths) != len(set(paths)):
@@ -166,14 +187,18 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
         # all queried outputs are required to be present
         for key in self.output_paths:
             if getattr(self.output, key) is None:
-                raise ValueError(f"Process did not create a file for output field '{key}'")
+                raise ValueError(
+                    f"Process did not create a file for output field '{key}'"
+                )
         return self
 
     def log_exception(self, exception: Exception) -> None:
         if isinstance(exception, ProcessUserError):
             self.logger.error(exception.format().model_dump_json())
         else:
-            self.logger.error(ProcessInternalError(exception).format().model_dump_json())
+            self.logger.error(
+                ProcessInternalError(exception).format().model_dump_json()
+            )
 
     def get_lizard_raster(self, id: str) -> LizardRaster:
         """Retrieve a lizard raster from Lizard by its dataset id in Rana."""
@@ -196,7 +221,9 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
 
     @property
     def _rana_dataset_gateway(self) -> RanaDatasetGateway:
-        raise NotImplementedError("rana_dataset_gateway must be implement in a subclass")
+        raise NotImplementedError(
+            "rana_dataset_gateway must be implement in a subclass"
+        )
 
     @property
     def job_id(self) -> UUID:
@@ -212,14 +239,20 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
 
     @property
     def lizard_raster_layer_gateway(self) -> LizardRasterLayerGateway:
-        raise NotImplementedError("lizard_raster_layer_gateway must be implemented in a subclass")
+        raise NotImplementedError(
+            "lizard_raster_layer_gateway must be implemented in a subclass"
+        )
 
     @property
     def _rana_schematisation_gateway(self) -> RanaSchematisationGateway:
-        raise NotImplementedError("rana_schematisation_gateway must be implemented in a subclass")
+        raise NotImplementedError(
+            "rana_schematisation_gateway must be implemented in a subclass"
+        )
 
     def get_file_stat(self, rana_path: RanaPath) -> FileStat:
-        raise NotImplementedError("get_file_stat method must be implemented in a subclass")
+        raise NotImplementedError(
+            "get_file_stat method must be implemented in a subclass"
+        )
 
     def download(self, rana_path: RanaPath) -> Path:
         raise NotImplementedError("Download method must be implemented in a subclass")
@@ -236,10 +269,17 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
 
     def upload_schematisation(self, schematisation_id: str, rana_path: str) -> RanaPath:
         self.logger.info(f"Writing schematisation to '{rana_path}'...")
-        file_upload = self._rana_schematisation_gateway.upload(rana_path, schematisation_id)
+        file_upload = self._rana_schematisation_gateway.upload(
+            rana_path, schematisation_id
+        )
         return RanaPath(id=rana_path, ref=file_upload.ref)
 
-    def upload_dir(self, local_path: Path, rana_path: str, expected_files: dict[str, FileOutput] = {}) -> RanaPath:
+    def upload_dir(
+        self,
+        local_path: Path,
+        rana_path: str,
+        expected_files: dict[str, FileOutput] = {},
+    ) -> RanaPath:
         if not local_path.is_dir():
             raise FileNotFoundError(f"Directory at {local_path} does not exist")
         root = Path(rana_path)
@@ -247,7 +287,9 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
         for file in local_path.rglob("*"):
             if file.is_file():
                 relative_path = str(file.relative_to(local_path))
-                expected_file = expected_files.get(relative_path, FileOutput(is_optional=True))
+                expected_file = expected_files.get(
+                    relative_path, FileOutput(is_optional=True)
+                )
                 self.upload(
                     local_path=file,
                     rana_path=str(root / relative_path),
@@ -258,7 +300,9 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
 
     def get_lizard_raster_dataset(self, id: str) -> RanaDatasetLizardRaster:
         """Retrieve a dataset with associated lizard raster by Rana dataset id."""
-        raise NotImplementedError("get_lizard_raster_dataset method must be implemented in a subclass")
+        raise NotImplementedError(
+            "get_lizard_raster_dataset method must be implemented in a subclass"
+        )
 
     def __enter__(self) -> None:
         raise NotImplementedError("Context manager must be implemented in a subclass")
@@ -267,7 +311,9 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
         raise NotImplementedError("Context manager must be implemented in a subclass")
 
     def _threedi_api_key_add(self) -> ThreediApiKey:
-        raise NotImplementedError("Threedi api key add must be implemented in a subclass")
+        raise NotImplementedError(
+            "Threedi api key add must be implemented in a subclass"
+        )
 
     def threedi_api_key(self) -> ThreediApiKey:
         if not self._rana_runtime.threedi_api_key:
@@ -283,7 +329,11 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
         )
 
     def setup_logger(self) -> None:
-        raise NotImplementedError("setup_logger method must be implemented in a subclass")
+        raise NotImplementedError(
+            "setup_logger method must be implemented in a subclass"
+        )
 
     def schematisation_id(self, schematisation: ThreediSchematisation) -> int:
-        raise NotImplementedError("schematisation_id method must be implemented in a subclass")
+        raise NotImplementedError(
+            "schematisation_id method must be implemented in a subclass"
+        )

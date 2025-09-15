@@ -35,13 +35,19 @@ class LocalTestRanaContext(RanaContext[T], Generic[T]):
     def download(self, rana_path: RanaPath) -> Path:
         source = self._rana_runtime.project_dir / rana_path.id
         if not source.exists():
-            raise FileNotFoundError(f"File at {rana_path} does not exist in the local project directory")
+            raise FileNotFoundError(
+                f"File at {rana_path} does not exist in the local project directory"
+            )
         target = self.job_working_dir / rana_path.id
         if target.exists():
-            raise FileExistsError(f"File at {rana_path} already exists in the local working directory")
+            raise FileExistsError(
+                f"File at {rana_path} already exists in the local working directory"
+            )
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
-        self.logger.info(f"                  | Reading file at path '{rana_path.id}'...")
+        self.logger.info(
+            f"                  | Reading file at path '{rana_path.id}'..."
+        )
         return Path(target)
 
     def upload(
@@ -55,21 +61,31 @@ class LocalTestRanaContext(RanaContext[T], Generic[T]):
         if not local_path.is_file():
             raise FileNotFoundError(f"File at {local_path} does not exist")
         rana_path = transfer_extension(local_path, rana_path)
-        self.logger.info(f"                  | Writing file to '{rana_path}' (local test mode)")
+        self.logger.info(
+            f"                  | Writing file to '{rana_path}' (local test mode)"
+        )
         target_path = self._rana_runtime.project_dir / rana_path
         target_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(local_path, target_path)
         if data_type or description or meta:
             metadata_path = Path(str(target_path) + ".json")
-            self.logger.info(f"                  | Writing file metadata to '{metadata_path}' (local test mode)")
+            self.logger.info(
+                f"                  | Writing file metadata to '{metadata_path}' (local test mode)"
+            )
             with metadata_path.open("w") as f:
-                json.dump({"data_type": data_type, "description": description, "meta": meta}, f, indent=2)
+                json.dump(
+                    {"data_type": data_type, "description": description, "meta": meta},
+                    f,
+                    indent=2,
+                )
         return RanaPath(id=rana_path, ref="local-test-ref")
 
     def __enter__(self) -> None:
         self.job_working_dir.mkdir(mode=0o0700, exist_ok=True)
 
-    def __exit__(self, exc_type: type, exc_value: TypeError, traceback: TracebackType) -> None:
+    def __exit__(
+        self, exc_type: type, exc_value: TypeError, traceback: TracebackType
+    ) -> None:
         if self._rana_runtime._cleanup_working_dir and self.job_working_dir.is_dir():
             shutil.rmtree(self.job_working_dir)
         self._rana_runtime.set_progress(100, "Completed")
@@ -91,7 +107,8 @@ class LocalTestRanaContext(RanaContext[T], Generic[T]):
     def get_lizard_raster_dataset(self, id: str) -> RanaDatasetLizardRaster:
         dataset = self._settings().datasets[id]
         return RanaDatasetLizardRaster(
-            **dataset.model_dump(exclude_none=True), lizard_raster=self.get_lizard_raster(dataset.lizard_raster_id)
+            **dataset.model_dump(exclude_none=True),
+            lizard_raster=self.get_lizard_raster(dataset.lizard_raster_id),
         )
 
     def _threedi_api_key_add(self) -> ThreediApiKey:
@@ -101,5 +118,7 @@ class LocalTestRanaContext(RanaContext[T], Generic[T]):
         pass  # no Sentry for local test context
 
     def schematisation_id(self, schematisation: ThreediSchematisation) -> int:
-        with open(self._rana_runtime.project_dir / schematisation.id) as schematisation_file:
+        with open(
+            self._rana_runtime.project_dir / schematisation.id
+        ) as schematisation_file:
             return int(schematisation_file.read().strip())

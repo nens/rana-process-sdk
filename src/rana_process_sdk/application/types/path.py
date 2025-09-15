@@ -6,7 +6,12 @@ from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import core_schema
 
 from ...domain import Json
-from ..widgets import DirectoryPickerWidget, FilePickerWidget, PathPickerWidget, UsingWidget
+from ..widgets import (
+    DirectoryPickerWidget,
+    FilePickerWidget,
+    PathPickerWidget,
+    UsingWidget,
+)
 
 __all__ = [
     "File",
@@ -70,7 +75,10 @@ Vector = Annotated[
 StudyArea = Annotated[
     RanaFile,
     UsingWidget(
-        FilePickerWidget(data_type_filter=["vector"], meta_filters={"feature_type_definition": ["study_area"]})
+        FilePickerWidget(
+            data_type_filter=["vector"],
+            meta_filters={"feature_type_definition": ["study_area"]},
+        )
     ),
 ]
 Scenario = Annotated[

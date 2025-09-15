@@ -4,6 +4,7 @@ from unittest.mock import patch
 from pydantic import SecretStr
 from pydantic_core import Url
 from pytest import fixture
+
 from rana_process_sdk.infrastructure.lizard_api_provider import LizardApiProvider
 from rana_process_sdk.settings import LizardSettings
 
@@ -31,4 +32,6 @@ def test_url(provider: LizardApiProvider):
 
 def test_headers_factory(provider: LizardApiProvider):
     headers = provider._headers_factory()
-    assert headers == {"authorization": "Basic " + b64encode(b"__key__:supersecret").decode("utf-8")}
+    assert headers == {
+        "authorization": "Basic " + b64encode(b"__key__:supersecret").decode("utf-8")
+    }

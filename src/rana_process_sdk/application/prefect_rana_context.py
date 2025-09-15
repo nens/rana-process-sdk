@@ -9,7 +9,14 @@ from threedi_api_client.files import download_file, upload_file
 
 from rana_process_sdk.domain.dataset import RanaDatasetLizardRaster
 
-from ..domain import FileStat, History, Json, ProcessUserError, RanaProcessParameters, ThreediApiKey
+from ..domain import (
+    FileStat,
+    History,
+    Json,
+    ProcessUserError,
+    RanaProcessParameters,
+    ThreediApiKey,
+)
 from ..infrastructure import (
     SENTRY_BLOCK_NAME,
     LizardRasterLayerGateway,
@@ -81,19 +88,30 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
     def get_file_history(self, rana_path: RanaPath) -> list[History]:
         history = self._file_gateway.history(rana_path.id, rana_path.ref, 1)
         if not history:
-            raise ValueError(f"Could not find latest ref for file on path {rana_path.id}")
+            raise ValueError(
+                f"Could not find latest ref for file on path {rana_path.id}"
+            )
         return history
 
     def download(self, rana_path: RanaPath) -> Path:
         # Check if path exists in project history
-        rana_path = rana_path.model_copy(update={"ref": self.get_file_history(rana_path)[0].ref})
+        rana_path = rana_path.model_copy(
+            update={"ref": self.get_file_history(rana_path)[0].ref}
+        )
         target = self.job_working_dir / rana_path.id
         if target.exists():
-            raise FileExistsError(f"File at {rana_path} already exists in the local working directory")
+            raise FileExistsError(
+                f"File at {rana_path} already exists in the local working directory"
+            )
         # ensure directory existence
         target.parent.mkdir(parents=True, exist_ok=True)
-        self.logger.info(f"Reading file at path '{rana_path.id}' from ref '{rana_path.ref}'...")
-        return download_file(str(self._file_gateway.get_download_url(rana_path.id, rana_path.ref)), target)[0]
+        self.logger.info(
+            f"Reading file at path '{rana_path.id}' from ref '{rana_path.ref}'..."
+        )
+        return download_file(
+            str(self._file_gateway.get_download_url(rana_path.id, rana_path.ref)),
+            target,
+        )[0]
 
     def upload(
         self,
@@ -155,9 +173,12 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
 
     def get_lizard_raster_dataset(self, id: str) -> RanaDatasetLizardRaster:
         dataset = self._rana_dataset_gateway.get(id)
-        if lizard_id := dataset.get_id_for_namespace(self.lizard_raster_layer_gateway.namespace):
+        if lizard_id := dataset.get_id_for_namespace(
+            self.lizard_raster_layer_gateway.namespace
+        ):
             return RanaDatasetLizardRaster(
-                **dataset.model_dump(exclude_none=True), lizard_raster=self.get_lizard_raster(lizard_id)
+                **dataset.model_dump(exclude_none=True),
+                lizard_raster=self.get_lizard_raster(lizard_id),
             )
         raise ProcessUserError(
             "Given dataset is not recognized as a Lizard raster",

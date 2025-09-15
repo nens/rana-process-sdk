@@ -1,5 +1,6 @@
 from pydantic import AnyHttpUrl
 from pytest import fixture, mark
+
 from rana_process_sdk.domain.dataset import RanaDataset, ResourceIdentifier
 
 
@@ -23,5 +24,7 @@ def dataset() -> RanaDataset:
         (AnyHttpUrl("https://namespace/3"), None),
     ],
 )
-def test_get_id_for_namespace(dataset: RanaDataset, namespace: AnyHttpUrl, expected_id: str | None) -> None:
+def test_get_id_for_namespace(
+    dataset: RanaDataset, namespace: AnyHttpUrl, expected_id: str | None
+) -> None:
     assert dataset.get_id_for_namespace(namespace) == expected_id

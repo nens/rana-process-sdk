@@ -5,7 +5,11 @@ __all__ = ["is_optional", "unpack_optional", "lookup_ref", "maybe_follow_ref"]
 
 def is_optional(prop: Json) -> bool:
     # given a 'property' element in a JSONSchema, return whether it is an optional field
-    return "anyOf" in prop and len(prop["anyOf"]) == 2 and prop["anyOf"][1] == {"type": "null"}
+    return (
+        "anyOf" in prop
+        and len(prop["anyOf"]) == 2
+        and prop["anyOf"][1] == {"type": "null"}
+    )
 
 
 def unpack_optional(prop: Json) -> Json | None:

@@ -3,9 +3,17 @@ import os
 from abc import ABC, abstractmethod
 
 from ..domain import FileUpload
-from .rana_api_provider import LocalTestRanaApiProvider, PrefectRanaApiProvider, RanaApiProvider
+from .rana_api_provider import (
+    LocalTestRanaApiProvider,
+    PrefectRanaApiProvider,
+    RanaApiProvider,
+)
 
-__all__ = ["RanaSchematisationGateway", "PrefectRanaSchematisationGateway", "LocalTestRanaSchematisationGateway"]
+__all__ = [
+    "RanaSchematisationGateway",
+    "PrefectRanaSchematisationGateway",
+    "LocalTestRanaSchematisationGateway",
+]
 
 
 class RanaSchematisationGateway(ABC):
@@ -35,7 +43,11 @@ class PrefectRanaSchematisationGateway(RanaSchematisationGateway):
         return self.provider_override or PrefectRanaApiProvider()
 
     def upload(self, path: str, schematisation_id: str) -> FileUpload:
-        params = {"path": path, "schematisation_id": schematisation_id, "branch": "main"}
+        params = {
+            "path": path,
+            "schematisation_id": schematisation_id,
+            "branch": "main",
+        }
         response = self.provider.job_request("POST", self.add_subpath, params=params)
         assert response is not None
         return FileUpload(**response)
@@ -53,4 +65,6 @@ class LocalTestRanaSchematisationGateway(RanaSchematisationGateway):
         project_dir = self.provider.rana_runtime.project_dir
         with open(os.path.join(project_dir, path), "w") as f:
             f.write(schematisation_id)
-        return FileUpload(id=path, ref="local_test", last_modified=datetime.datetime.now())
+        return FileUpload(
+            id=path, ref="local_test", last_modified=datetime.datetime.now()
+        )

@@ -58,7 +58,11 @@ class LizardRasterLayerGateway:
             raise e
 
     def get_async_geotiff(
-        self, id: str, bbox: tuple[float, float, float, float], epsg_code: int, pixel_size: float
+        self,
+        id: str,
+        bbox: tuple[float, float, float, float],
+        epsg_code: int,
+        pixel_size: float,
     ) -> str:
         try:
             result = self.provider.request(

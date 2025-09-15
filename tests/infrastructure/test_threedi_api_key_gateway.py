@@ -2,8 +2,13 @@ from http import HTTPStatus
 from unittest.mock import Mock
 
 from pytest import fixture
+
 from rana_process_sdk.domain import ThreediApiKey
-from rana_process_sdk.infrastructure import ApiException, RanaApiProvider, ThreediApiKeyGateway
+from rana_process_sdk.infrastructure import (
+    ApiException,
+    RanaApiProvider,
+    ThreediApiKeyGateway,
+)
 
 
 @fixture
@@ -33,7 +38,9 @@ def test_add(gateway: ThreediApiKeyGateway, provider: Mock):
 def test_remove(gateway: ThreediApiKeyGateway, provider: Mock):
     assert gateway.remove("ahM5ohHo")
 
-    provider.job_request.assert_called_once_with("DELETE", "3di-personal-api-keys/ahM5ohHo")
+    provider.job_request.assert_called_once_with(
+        "DELETE", "3di-personal-api-keys/ahM5ohHo"
+    )
 
 
 def test_remove_does_not_exist(gateway: ThreediApiKeyGateway, provider: Mock):

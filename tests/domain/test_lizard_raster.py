@@ -1,12 +1,15 @@
 from uuid import uuid4
 
 from pytest import fixture
+
 from rana_process_sdk.domain import LizardRaster
 
 
 @fixture
 def lizard_raster() -> LizardRaster:
-    return LizardRaster(id=uuid4(), pixelsize_x=2.0, pixelsize_y=-10.0, projection="EPSG:4326")
+    return LizardRaster(
+        id=uuid4(), pixelsize_x=2.0, pixelsize_y=-10.0, projection="EPSG:4326"
+    )
 
 
 @fixture

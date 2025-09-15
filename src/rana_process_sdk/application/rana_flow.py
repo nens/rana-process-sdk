@@ -31,15 +31,23 @@ def validate_call_signature(func: Callable[P, Any]) -> None:
     ):
         raise ValueError("The context's output field must be nullable")
     try:
-        if not issubclass(typing.get_args(output_field.annotation)[0], RanaProcessParameters):
-            raise ValueError("The output field must be a subclass of RanaProcessParameters")
+        if not issubclass(
+            typing.get_args(output_field.annotation)[0], RanaProcessParameters
+        ):
+            raise ValueError(
+                "The output field must be a subclass of RanaProcessParameters"
+            )
     except TypeError:
-        raise ValueError("RanaContext must be subclassed like so: RanaContext[SomeOutputClass]")
+        raise ValueError(
+            "RanaContext must be subclassed like so: RanaContext[SomeOutputClass]"
+        )
 
     if "inputs" not in s.parameters:
         raise ValueError("The function must have a parameter called 'inputs'")
     if not issubclass(s.parameters["inputs"].annotation, RanaProcessParameters):
-        raise ValueError("The inputs parameter must be a subclass of RanaProcessParameters")
+        raise ValueError(
+            "The inputs parameter must be a subclass of RanaProcessParameters"
+        )
 
 
 def cast_rana_context(context: RanaContext) -> RanaContext:
@@ -48,7 +56,9 @@ def cast_rana_context(context: RanaContext) -> RanaContext:
     return context
 
 
-def rana_flow(title: str | None = None, description: str | None = None) -> Callable[[Callable[P, None]], Flow[P, None]]:
+def rana_flow(
+    title: str | None = None, description: str | None = None
+) -> Callable[[Callable[P, None]], Flow[P, None]]:
     def rana_flow_wrapper(func: Callable[P, None]) -> Flow[P, None]:
         validate_call_signature(func)
 
@@ -65,11 +75,21 @@ def rana_flow(title: str | None = None, description: str | None = None) -> Calla
                     raise exception
 
         description_override = description
-        description_path = Path(func.__globals__["__file__"]).parent / DESCRIPTION_FILENAME
+        description_path = (
+            Path(func.__globals__["__file__"]).parent / DESCRIPTION_FILENAME
+        )
         if not description and description_path.exists():
-            with contextlib.suppress(OSError), open(description_path) as description_file:
+            with (
+                contextlib.suppress(OSError),
+                open(description_path) as description_file,
+            ):
                 description_override = description_file.read()
 
-        return flow(persist_result=False, log_prints=True, description=description_override, name=title)(wrapper)
+        return flow(
+            persist_result=False,
+            log_prints=True,
+            description=description_override,
+            name=title,
+        )(wrapper)
 
     return rana_flow_wrapper

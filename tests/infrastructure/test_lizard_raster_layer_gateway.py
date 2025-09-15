@@ -4,8 +4,13 @@ from uuid import uuid4
 
 from pydantic import AnyHttpUrl
 from pytest import fixture, raises
+
 from rana_process_sdk.domain import DoesNotExist
-from rana_process_sdk.infrastructure import ApiException, LizardApiProvider, LizardRasterLayerGateway
+from rana_process_sdk.infrastructure import (
+    ApiException,
+    LizardApiProvider,
+    LizardRasterLayerGateway,
+)
 
 
 @fixture
@@ -84,8 +89,12 @@ def test_get_geotiff_async_not_found(gateway: LizardRasterLayerGateway, provider
         gateway.get_async_geotiff(raster_id, bbox, epsg_code, pixel_size)
 
 
-def test_get_geotiff_async_other_exception(gateway: LizardRasterLayerGateway, provider: Mock):
-    provider.request.side_effect = ApiException(obj={}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+def test_get_geotiff_async_other_exception(
+    gateway: LizardRasterLayerGateway, provider: Mock
+):
+    provider.request.side_effect = ApiException(
+        obj={}, status=HTTPStatus.INTERNAL_SERVER_ERROR
+    )
 
     bbox = (1.0, 2.0, 3.0, 4.0)
     epsg_code = 4326

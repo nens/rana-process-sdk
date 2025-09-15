@@ -1,4 +1,9 @@
-__all__ = ["ProcessUserError", "ProcessInternalError", "FormattedException", "DoesNotExist"]
+__all__ = [
+    "ProcessUserError",
+    "ProcessInternalError",
+    "FormattedException",
+    "DoesNotExist",
+]
 
 import traceback
 from typing import Literal

@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from pydantic import SecretStr
 from pytest import LogCaptureFixture, fixture
+
 from rana_process_sdk.infrastructure import LocalTestRanaRuntime
 from rana_process_sdk.settings import LocalTestSettings
 
@@ -19,7 +20,10 @@ def runtime(tmp_path: Path, local_test_settings: Mock) -> LocalTestRanaRuntime:
     project_dir = tmp_path / "project_dir"
     project_dir.mkdir(parents=True, exist_ok=True)
     return LocalTestRanaRuntime(
-        working_dir=str(working_dir), project_dir=str(project_dir), settings=local_test_settings, cleanup_workdir=False
+        working_dir=str(working_dir),
+        project_dir=str(project_dir),
+        settings=local_test_settings,
+        cleanup_workdir=False,
     )
 
 
@@ -37,8 +41,12 @@ def test_set_progress(runtime: LocalTestRanaRuntime, caplog: LogCaptureFixture):
     assert " [██████████] 100% | Job Done!" in caplog.text
 
 
-def test_runtime_with_threedi_api_key(runtime: LocalTestRanaRuntime, local_test_settings: Mock):
-    local_test_settings.threedi = Mock(api_key=SecretStr("test_prefix.test_key"), organisation=uuid4())
+def test_runtime_with_threedi_api_key(
+    runtime: LocalTestRanaRuntime, local_test_settings: Mock
+):
+    local_test_settings.threedi = Mock(
+        api_key=SecretStr("test_prefix.test_key"), organisation=uuid4()
+    )
 
     runtime_with_key = LocalTestRanaRuntime(
         working_dir=str(runtime.job_working_dir),
@@ -49,5 +57,10 @@ def test_runtime_with_threedi_api_key(runtime: LocalTestRanaRuntime, local_test_
 
     assert runtime_with_key.threedi_api_key is not None
     assert runtime_with_key.threedi_api_key.prefix == "test_prefix"
-    assert runtime_with_key.threedi_api_key.key.get_secret_value() == "test_prefix.test_key"
-    assert runtime_with_key.threedi_api_key.organisations == [local_test_settings.threedi.organisation]
+    assert (
+        runtime_with_key.threedi_api_key.key.get_secret_value()
+        == "test_prefix.test_key"
+    )
+    assert runtime_with_key.threedi_api_key.organisations == [
+        local_test_settings.threedi.organisation
+    ]

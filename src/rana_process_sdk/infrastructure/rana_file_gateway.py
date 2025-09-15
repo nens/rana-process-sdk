@@ -24,7 +24,9 @@ class RanaFileGateway:
 
     def stat(self, path: str, ref: str) -> FileStat:
         try:
-            response = self.provider.job_request("GET", self.stat_subpath, params={"path": path, "ref": ref})
+            response = self.provider.job_request(
+                "GET", self.stat_subpath, params={"path": path, "ref": ref}
+            )
         except ApiException as e:
             if e.status == HTTPStatus.NOT_FOUND:
                 raise DoesNotExist("file", path)
@@ -33,7 +35,9 @@ class RanaFileGateway:
         return FileStat(**response)
 
     def get_download_url(self, path: str, ref: str) -> str:
-        response = self.provider.job_request("GET", self.download_subpath, params={"path": path, "ref": ref})
+        response = self.provider.job_request(
+            "GET", self.download_subpath, params={"path": path, "ref": ref}
+        )
         if response is None:
             raise DoesNotExist("file", path)
         return response["url"]
@@ -48,7 +52,9 @@ class RanaFileGateway:
         return [History.model_construct(**x) for x in response["items"]]
 
     def upload_start(self, path: str) -> Json:
-        response = self.provider.job_request("POST", self.upload_subpath, params={"path": path})
+        response = self.provider.job_request(
+            "POST", self.upload_subpath, params={"path": path}
+        )
         assert response is not None
         return response
 

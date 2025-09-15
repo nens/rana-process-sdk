@@ -8,7 +8,13 @@ from unittest.mock import MagicMock, Mock, patch
 from prefect import Flow
 from pydantic import Field
 from pytest import fixture, mark, raises
-from rana_process_sdk import PrefectRanaContext, RanaContext, RanaProcessParameters, rana_flow
+
+from rana_process_sdk import (
+    PrefectRanaContext,
+    RanaContext,
+    RanaProcessParameters,
+    rana_flow,
+)
 from rana_process_sdk.application.local_test_rana_context import LocalTestRanaContext
 
 MODULE = "rana_process_sdk.application.rana_flow"
@@ -44,7 +50,10 @@ def test_rana_flow_param_spec():
     }
     assert flow.parameters.definitions["RanaContext_Output_"] == {
         "properties": {
-            "output": {"anyOf": [{"$ref": "#/definitions/Output"}, {"type": "null"}], "default": None},
+            "output": {
+                "anyOf": [{"$ref": "#/definitions/Output"}, {"type": "null"}],
+                "default": None,
+            },
             "output_paths": {
                 "additionalProperties": {"type": "string"},
                 "default": {},
@@ -86,7 +95,9 @@ def test_param_spec_no_context():
     def f(inputs: Inputs) -> None:
         return None
 
-    with raises(ValueError, match="The function must have a parameter called 'context'"):
+    with raises(
+        ValueError, match="The function must have a parameter called 'context'"
+    ):
         rana_flow()(f)
 
 
@@ -94,7 +105,12 @@ def test_param_spec_generic():
     def f(context: PrefectRanaContext, inputs: Inputs) -> None:
         return None
 
-    with raises(ValueError, match=re.escape("RanaContext must be subclassed like so: RanaContext[SomeOutputClass]")):
+    with raises(
+        ValueError,
+        match=re.escape(
+            "RanaContext must be subclassed like so: RanaContext[SomeOutputClass]"
+        ),
+    ):
         rana_flow()(f)
 
 
@@ -102,7 +118,9 @@ def test_param_spec_context_no_rana_process_parameters():
     def f(context: PrefectRanaContext[str], inputs: Inputs) -> None:
         return None
 
-    with raises(ValueError, match="The output field must be a subclass of RanaProcessParameters"):
+    with raises(
+        ValueError, match="The output field must be a subclass of RanaProcessParameters"
+    ):
         rana_flow()(f)
 
 
@@ -118,14 +136,19 @@ def test_param_spec_inputs_no_rana_process_parameters():
     def f(context: PrefectRanaContext[Output], inputs: str) -> None:
         return None
 
-    with raises(ValueError, match="The inputs parameter must be a subclass of RanaProcessParameters"):
+    with raises(
+        ValueError,
+        match="The inputs parameter must be a subclass of RanaProcessParameters",
+    ):
         rana_flow()(f)
 
 
 @mark.parametrize("rana_context_class", [PrefectRanaContext, LocalTestRanaContext])
 @patch(MODULE + ".cast_rana_context")
 def test_rana_flow_context(cast_rana_context: Mock, rana_context_class):
-    rana_context = Mock(rana_context_class[Output], __enter__=MagicMock(), __exit__=MagicMock())
+    rana_context = Mock(
+        rana_context_class[Output], __enter__=MagicMock(), __exit__=MagicMock()
+    )
     cast_rana_context.return_value = rana_context
 
     @rana_flow()
@@ -180,8 +203,14 @@ def test_rana_flow_description_without_param(flow_module):
 
 
 def test_rana_flow_description_file_with_param(flow_module_with_descripion_file):
-    assert flow_module_with_descripion_file.flow_with_description.description == "This is a test flow"
+    assert (
+        flow_module_with_descripion_file.flow_with_description.description
+        == "This is a test flow"
+    )
 
 
 def test_rana_flow_description_file_without_param(flow_module_with_descripion_file):
-    assert flow_module_with_descripion_file.flow_without_description.description == "# Example Process Description"
+    assert (
+        flow_module_with_descripion_file.flow_without_description.description
+        == "# Example Process Description"
+    )

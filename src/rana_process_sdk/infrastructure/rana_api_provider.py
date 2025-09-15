@@ -23,7 +23,13 @@ class RanaApiProvider(ApiProvider):
         super().__init__(url=get_settings().rana_api_url)
 
     @abstractmethod
-    def job_request(self, method: str, path: str, params: Json | None = None, json: Json | None = None) -> Json | None:
+    def job_request(
+        self,
+        method: str,
+        path: str,
+        params: Json | None = None,
+        json: Json | None = None,
+    ) -> Json | None:
         pass
 
 
@@ -34,9 +40,23 @@ class PrefectRanaApiProvider(RanaApiProvider):
         self.rana_runtime = rana_runtiem or PrefectRanaRuntime()
         super().__init__()
 
-    def job_request(self, method: str, path: str, params: Json | None = None, json: Json | None = None) -> Json | None:
-        path = _get_job_path(self.rana_runtime) + (path if path.startswith("/") else "/" + path)
-        return super().request(method, path, params=params, json=json, headers=_get_headers(self.rana_runtime))
+    def job_request(
+        self,
+        method: str,
+        path: str,
+        params: Json | None = None,
+        json: Json | None = None,
+    ) -> Json | None:
+        path = _get_job_path(self.rana_runtime) + (
+            path if path.startswith("/") else "/" + path
+        )
+        return super().request(
+            method,
+            path,
+            params=params,
+            json=json,
+            headers=_get_headers(self.rana_runtime),
+        )
 
 
 class LocalTestRanaApiProvider(RanaApiProvider):
@@ -45,5 +65,11 @@ class LocalTestRanaApiProvider(RanaApiProvider):
     def __init__(self, rana_runtime: LocalTestRanaRuntime) -> None:
         self.rana_runtime = rana_runtime
 
-    def job_request(self, method: str, path: str, params: Json | None = None, json: Json | None = None) -> Json | None:
+    def job_request(
+        self,
+        method: str,
+        path: str,
+        params: Json | None = None,
+        json: Json | None = None,
+    ) -> Json | None:
         raise NotImplementedError("Do not use job request in local test runtime")

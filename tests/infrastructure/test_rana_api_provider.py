@@ -4,9 +4,13 @@ from uuid import uuid4
 from pydantic import SecretStr
 from pydantic_core import Url
 from pytest import fixture, mark
+
 from rana_process_sdk import PrefectRanaApiProvider
 from rana_process_sdk.infrastructure import ApiProvider, RanaRuntime
-from rana_process_sdk.infrastructure.rana_api_provider import _get_headers, _get_job_path
+from rana_process_sdk.infrastructure.rana_api_provider import (
+    _get_headers,
+    _get_job_path,
+)
 
 MODULE = "rana_process_sdk.infrastructure.rana_api_provider"
 
@@ -58,12 +62,18 @@ def test_job_request(
     prefect_rana_api_provider: PrefectRanaApiProvider,
     path: str,
 ):
-    actual = prefect_rana_api_provider.job_request("GET", path, {"param": "value"}, {"json": "value"})
+    actual = prefect_rana_api_provider.job_request(
+        "GET", path, {"param": "value"}, {"json": "value"}
+    )
 
     assert actual is request_m.return_value
 
     request_m.assert_called_once_with(
-        "GET", "path/to/job/files/ls", params={"param": "value"}, json={"json": "value"}, headers={"header": "value"}
+        "GET",
+        "path/to/job/files/ls",
+        params={"param": "value"},
+        json={"json": "value"},
+        headers={"header": "value"},
     )
     _get_headers.assert_called_once_with(runtime)
     _get_job_path.assert_called_once_with(runtime)

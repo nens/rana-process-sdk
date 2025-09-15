@@ -2,7 +2,11 @@ from os import environ
 from uuid import UUID
 
 from pydantic import BaseModel, SecretStr
-from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 from pydantic_settings_yaml.base_settings import YamlConfigSettingsSource
 
 from .settings import LizardSettings

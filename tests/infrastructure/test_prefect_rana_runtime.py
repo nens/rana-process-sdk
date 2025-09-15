@@ -7,6 +7,7 @@ from prefect.client.schemas import FlowRun
 from prefect.context import EngineContext, SettingsContext
 from prefect.settings import Settings
 from pytest import fixture
+
 from rana_process_sdk.infrastructure import PrefectRanaRuntime
 
 MODULE = "rana_process_sdk.infrastructure.prefect_rana_runtime"
@@ -32,12 +33,16 @@ def engine_context() -> Iterator[EngineContext]:
 @fixture
 def settings_context(tmp_path) -> Iterator[SettingsContext]:
     with patch(f"{MODULE}.SettingsContext") as m:
-        m.get.return_value = Mock(SettingsContext, settings=Mock(Settings, home=Path(tmp_path)))
+        m.get.return_value = Mock(
+            SettingsContext, settings=Mock(Settings, home=Path(tmp_path))
+        )
         yield m.get.return_value
 
 
 @fixture
-def runtime(engine_context: Iterator[EngineContext], settings_context: Iterator[SettingsContext]) -> PrefectRanaRuntime:
+def runtime(
+    engine_context: Iterator[EngineContext], settings_context: Iterator[SettingsContext]
+) -> PrefectRanaRuntime:
     return PrefectRanaRuntime()
 
 
@@ -66,7 +71,10 @@ def test_process_id(runtime: PrefectRanaRuntime):
 
 
 def test_working_dir(runtime: PrefectRanaRuntime, settings_context: SettingsContext):
-    assert runtime.job_working_dir == settings_context.settings.home / "7d991ce4-9025-47dc-b715-bc7c08761190"
+    assert (
+        runtime.job_working_dir
+        == settings_context.settings.home / "7d991ce4-9025-47dc-b715-bc7c08761190"
+    )
 
 
 @patch(f"{MODULE}.get_run_logger")

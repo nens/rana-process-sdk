@@ -133,11 +133,15 @@ class ApiProvider:
             actual_headers.update(headers)
         request_kwargs = {
             "method": method,
-            "url": add_query_params(join(self._url, quote(path), self._trailing_slash), params),
+            "url": add_query_params(
+                join(self._url, quote(path), self._trailing_slash), params
+            ),
             "timeout": timeout,
         }
         if sum(x is not None for x in (body, json, fields)) > 1:
-            raise ValueError("Cannot specify more than one of 'body', 'json', or 'fields'")
+            raise ValueError(
+                "Cannot specify more than one of 'body', 'json', or 'fields'"
+            )
         if body is not None:
             request_kwargs["body"] = body
         elif json is not None:
@@ -160,13 +164,17 @@ class ApiProvider:
         headers: dict[str, str] | None = None,
         timeout: float = 5.0,
     ) -> Json | None:
-        response = self._request(method, path, params, body, json, fields, headers, timeout)
+        response = self._request(
+            method, path, params, body, json, fields, headers, timeout
+        )
         status = HTTPStatus(response.status)
         content_type = response.headers.get("Content-Type")
         if status is HTTPStatus.NO_CONTENT:
             return None
         if not is_json_content_type(content_type):
-            raise ApiException(f"Unexpected content type '{content_type}'", status=status)
+            raise ApiException(
+                f"Unexpected content type '{content_type}'", status=status
+            )
         response_body = json_lib.loads(response.data.decode())
         check_exception(status, response_body)
         return response_body
@@ -183,7 +191,9 @@ class ApiProvider:
         headers: dict[str, str] | None = None,
         timeout: float = 5.0,
     ) -> Response:
-        response = self._request(method, path, params, body, json, fields, headers, timeout)
+        response = self._request(
+            method, path, params, body, json, fields, headers, timeout
+        )
         return Response(
             status=HTTPStatus(response.status),
             data=response.data,

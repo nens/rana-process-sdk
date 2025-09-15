@@ -4,7 +4,11 @@ from typing import cast
 from uuid import UUID
 
 from prefect import get_run_logger
-from prefect.artifacts import create_progress_artifact, create_table_artifact, update_progress_artifact
+from prefect.artifacts import (
+    create_progress_artifact,
+    create_table_artifact,
+    update_progress_artifact,
+)
 from prefect.context import EngineContext, SettingsContext
 from pydantic import SecretStr
 

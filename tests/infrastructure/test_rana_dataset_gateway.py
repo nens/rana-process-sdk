@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 from pydantic import AnyHttpUrl
 from pytest import fixture, raises
+
 from rana_process_sdk.domain import DoesNotExist, Json
 from rana_process_sdk.domain.dataset import RanaDataset, ResourceIdentifier
 from rana_process_sdk.infrastructure import RanaApiProvider, RanaDatasetGateway
@@ -36,7 +37,11 @@ def test_get(gateway: RanaDatasetGateway, provider: Mock, rana_dataset_response:
     assert actual == RanaDataset(
         id="DatasetId",
         title="Titel",
-        resource_identifier=[ResourceIdentifier(code="LizardId", link=AnyHttpUrl("https://lizard/rasters"))],
+        resource_identifier=[
+            ResourceIdentifier(
+                code="LizardId", link=AnyHttpUrl("https://lizard/rasters")
+            )
+        ],
     )
     provider.job_request.assert_called_once_with("GET", "datasets/DatasetId")
 

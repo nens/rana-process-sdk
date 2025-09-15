@@ -5,7 +5,12 @@ from pydantic import BaseModel, ConfigDict
 from ...domain import Json
 from .base import Widget
 
-__all__ = ["PathPickerWidget", "FilePickerWidget", "DirectoryPickerWidget", "ExpectedFile"]
+__all__ = [
+    "PathPickerWidget",
+    "FilePickerWidget",
+    "DirectoryPickerWidget",
+    "ExpectedFile",
+]
 
 
 class PathPickerWidget(Widget):
@@ -42,7 +47,11 @@ class FilePickerWidget(PathPickerWidget):
     @property
     def output_meta_values(self) -> Json:
         """Returns metadata values intended for assigning it to a newly created file."""
-        return {k: v[0] for (k, v) in self.meta_filters.items() if len(v) == 1} if self.meta_filters else {}
+        return (
+            {k: v[0] for (k, v) in self.meta_filters.items() if len(v) == 1}
+            if self.meta_filters
+            else {}
+        )
 
 
 class ExpectedFile(BaseModel):
@@ -65,7 +74,9 @@ class DirectoryPickerWidget(PathPickerWidget):
             (
                 self.__class__,
                 tuple(self.data_type_filter) if self.data_type_filter else None,
-                frozenset((k, v.__hash__()) for (k, v) in self.expected_files.items() if v),
+                frozenset(
+                    (k, v.__hash__()) for (k, v) in self.expected_files.items() if v
+                ),
             )
         )
 

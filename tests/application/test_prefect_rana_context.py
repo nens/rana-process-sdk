@@ -5,6 +5,7 @@ from uuid import UUID
 
 from pydantic import AnyHttpUrl, SecretStr, ValidationError
 from pytest import fixture, mark, raises
+
 from rana_process_sdk import (
     Directory,
     File,
@@ -15,8 +16,18 @@ from rana_process_sdk import (
     ThreediSchematisation,
     transfer_extension,
 )
-from rana_process_sdk.domain import FileStat, FileUpload, History, ProcessUserError, ThreediApiKey
-from rana_process_sdk.domain.dataset import RanaDataset, RanaDatasetLizardRaster, ResourceIdentifier
+from rana_process_sdk.domain import (
+    FileStat,
+    FileUpload,
+    History,
+    ProcessUserError,
+    ThreediApiKey,
+)
+from rana_process_sdk.domain.dataset import (
+    RanaDataset,
+    RanaDatasetLizardRaster,
+    ResourceIdentifier,
+)
 from rana_process_sdk.domain.lizard_raster import LizardRaster
 from rana_process_sdk.infrastructure import (
     SENTRY_BLOCK_NAME,
@@ -72,7 +83,9 @@ class MultipleFileOutput(RanaProcessParameters):
 @fixture
 def threedi_api_key_gateway() -> Iterator[Mock]:
     with patch.object(
-        PrefectRanaContext, "_threedi_api_key_gateway", new_callable=PropertyMock(ThreediApiKeyGateway)
+        PrefectRanaContext,
+        "_threedi_api_key_gateway",
+        new_callable=PropertyMock(ThreediApiKeyGateway),
     ) as m:
         yield m
 
@@ -80,21 +93,29 @@ def threedi_api_key_gateway() -> Iterator[Mock]:
 @fixture
 def rana_schematisation_gateway() -> Iterator[Mock]:
     with patch.object(
-        PrefectRanaContext, "_rana_schematisation_gateway", new_callable=PropertyMock(RanaSchematisationGateway)
+        PrefectRanaContext,
+        "_rana_schematisation_gateway",
+        new_callable=PropertyMock(RanaSchematisationGateway),
     ) as m:
         yield m
 
 
 @fixture
 def rana_dataset_gateway() -> Iterator[Mock]:
-    with patch.object(PrefectRanaContext, "_rana_dataset_gateway", new_callable=PropertyMock(RanaDatasetGateway)) as m:
+    with patch.object(
+        PrefectRanaContext,
+        "_rana_dataset_gateway",
+        new_callable=PropertyMock(RanaDatasetGateway),
+    ) as m:
         yield m
 
 
 @fixture
 def lizard_raster_layer_gateway() -> Iterator[Mock]:
     with patch.object(
-        PrefectRanaContext, "lizard_raster_layer_gateway", new_callable=PropertyMock(LizardRasterLayerGateway)
+        PrefectRanaContext,
+        "lizard_raster_layer_gateway",
+        new_callable=PropertyMock(LizardRasterLayerGateway),
     ) as m:
         yield m
 
@@ -114,7 +135,9 @@ def prefect_rana_runtime() -> Iterator[Mock]:
 
 @fixture
 def file_gateway() -> Iterator[Mock]:
-    with patch.object(PrefectRanaContext, "_file_gateway", new_callable=PropertyMock(RanaFileGateway)) as m:
+    with patch.object(
+        PrefectRanaContext, "_file_gateway", new_callable=PropertyMock(RanaFileGateway)
+    ) as m:
         yield m
 
 
@@ -175,7 +198,9 @@ def test_init_with_extra_output_path():
 
 def test_init_with_duplicate_output_paths():
     with raises(ValueError, match="Output paths parameters should be unique"):
-        PrefectRanaContext[MultipleFileOutput](output_paths={"x": "dem.tif", "y": "dem.tif"})
+        PrefectRanaContext[MultipleFileOutput](
+            output_paths={"x": "dem.tif", "y": "dem.tif"}
+        )
 
 
 def test_init_with_directory_path():
@@ -198,12 +223,18 @@ def test_init_with_empty_optional_output_path():
     assert actual.output_paths == {}
 
 
-@mark.parametrize("attr", ["job_id", "job_secret", "tenant_id", "job_working_dir", "logger"])
-def test_prefect_context_attrs(prefect_rana_runtime: Mock, rana_context: PrefectRanaContext, attr: str):
+@mark.parametrize(
+    "attr", ["job_id", "job_secret", "tenant_id", "job_working_dir", "logger"]
+)
+def test_prefect_context_attrs(
+    prefect_rana_runtime: Mock, rana_context: PrefectRanaContext, attr: str
+):
     assert getattr(rana_context, attr) is getattr(prefect_rana_runtime, attr)
 
 
-def test_get_file_stat(file_gateway: Mock, rana_context: PrefectRanaContext, file_stat: FileStat):
+def test_get_file_stat(
+    file_gateway: Mock, rana_context: PrefectRanaContext, file_stat: FileStat
+):
     file_gateway.stat.return_value = file_stat
 
     assert rana_context.get_file_stat(File(id="foo", ref="bar")) == file_stat
@@ -211,7 +242,9 @@ def test_get_file_stat(file_gateway: Mock, rana_context: PrefectRanaContext, fil
     file_gateway.stat.assert_called_once_with("foo", "bar")
 
 
-def test_get_file_stat_none(file_gateway: Mock, rana_context: PrefectRanaContext, file_stat: FileStat):
+def test_get_file_stat_none(
+    file_gateway: Mock, rana_context: PrefectRanaContext, file_stat: FileStat
+):
     file_gateway.stat.return_value = None
 
     with raises(ValueError, match="File at foo does not exist in Rana"):
@@ -235,13 +268,17 @@ def test_download(
     assert rana_context.download(rana_path) == expected_target
 
     file_gateway.history.assert_called_once_with(rana_path.id, "main", 1)
-    file_gateway.get_download_url.assert_called_once_with(rana_path.id, file_gateway.history.return_value[0].ref)
+    file_gateway.get_download_url.assert_called_once_with(
+        rana_path.id, file_gateway.history.return_value[0].ref
+    )
     prefect_rana_runtime.logger.info.assert_called_once_with(
         f"Reading file at path '{rana_path.id}' from ref '{file_gateway.history.return_value[0].ref}'..."
     )
     with expected_target.open() as f:
         assert f.read() == "foo"
-    download_file.assert_called_once_with(str(file_gateway.get_download_url.return_value), expected_target)
+    download_file.assert_called_once_with(
+        str(file_gateway.get_download_url.return_value), expected_target
+    )
 
 
 @patch(f"{MODULE}.download_file", side_effect=fake_download_file)
@@ -259,13 +296,17 @@ def test_download_with_ref(
     assert rana_context.download(rana_path) == expected_target
 
     file_gateway.history.assert_called_once_with(rana_path.id, rana_path.ref, 1)
-    file_gateway.get_download_url.assert_called_once_with(rana_path.id, file_gateway.history.return_value[0].ref)
+    file_gateway.get_download_url.assert_called_once_with(
+        rana_path.id, file_gateway.history.return_value[0].ref
+    )
     prefect_rana_runtime.logger.info.assert_called_once_with(
         f"Reading file at path '{rana_path.id}' from ref '{file_gateway.history.return_value[0].ref}'..."
     )
     with expected_target.open() as f:
         assert f.read() == "foo"
-    download_file.assert_called_once_with(str(file_gateway.get_download_url.return_value), expected_target)
+    download_file.assert_called_once_with(
+        str(file_gateway.get_download_url.return_value), expected_target
+    )
 
 
 def test_download_no_history(file_gateway: Mock, rana_context: PrefectRanaContext):
@@ -281,7 +322,9 @@ def test_download_no_history(file_gateway: Mock, rana_context: PrefectRanaContex
 
 
 def test_download_already_exists(
-    job_working_dir: Path, file_gateway: RanaFileGateway, rana_context: PrefectRanaContext
+    job_working_dir: Path,
+    file_gateway: RanaFileGateway,
+    rana_context: PrefectRanaContext,
 ):
     rana_path = File(id="foo.txt")
     file_gateway.history.return_value = [
@@ -305,20 +348,32 @@ def test_upload(
     local_path = job_working_dir / "local.txt"
     local_path.touch()
     rana_path = "a/foo"
-    file_gateway.upload_start.return_value = {"urls": ["http://example.com"], "other": "fields"}
+    file_gateway.upload_start.return_value = {
+        "urls": ["http://example.com"],
+        "other": "fields",
+    }
     file_gateway.upload_complete.return_value = FileUpload.model_validate(
         {"id": "a/foo.txt", "last_modified": "2021-01-01T00:00:00Z", "ref": "abc123"}
     )
     transfer_extension.return_value = "a/foo.txt"
 
-    actual = rana_context.upload(local_path, rana_path, data_type="DataType", description="foo", meta={"key": "value"})
+    actual = rana_context.upload(
+        local_path,
+        rana_path,
+        data_type="DataType",
+        description="foo",
+        meta={"key": "value"},
+    )
 
     assert actual == RanaPath(id="a/foo.txt", ref="abc123")
 
     file_gateway.upload_start.assert_called_once_with("a/foo.txt")
     upload_file.assert_called_once_with("http://example.com", local_path)
     file_gateway.upload_complete.assert_called_once_with(
-        file_gateway.upload_start.return_value, data_type="DataType", description="foo", meta={"key": "value"}
+        file_gateway.upload_start.return_value,
+        data_type="DataType",
+        description="foo",
+        meta={"key": "value"},
     )
     transfer_extension.assert_called_once_with(local_path, rana_path)
 
@@ -372,7 +427,9 @@ def test_context_manager_threedi_no_api_key(
 
 
 def test_context_manager_workdir_deleted(
-    rana_context: PrefectRanaContext, prefect_rana_runtime: PrefectRanaRuntime, job_working_dir: Path
+    rana_context: PrefectRanaContext,
+    prefect_rana_runtime: PrefectRanaRuntime,
+    job_working_dir: Path,
 ):
     with rana_context:
         prefect_rana_runtime.job_working_dir.rmdir()
@@ -381,7 +438,9 @@ def test_context_manager_workdir_deleted(
 @fixture
 def threedi_api_key() -> ThreediApiKey:
     return ThreediApiKey(
-        prefix="Prefix", key=SecretStr("supersecret"), organisations=[UUID("8a831188-f7fa-4d04-90d0-7a104cd09963")]
+        prefix="Prefix",
+        key=SecretStr("supersecret"),
+        organisations=[UUID("8a831188-f7fa-4d04-90d0-7a104cd09963")],
     )
 
 
@@ -474,7 +533,9 @@ def test_transfer_extension(local_path: str, rana_path: str, expected: str):
     assert transfer_extension(Path(local_path), rana_path) == expected
 
 
-def test_log_exception_process_user_error(rana_context: PrefectRanaContext, prefect_rana_runtime: Mock):
+def test_log_exception_process_user_error(
+    rana_context: PrefectRanaContext, prefect_rana_runtime: Mock
+):
     exception = ProcessUserError(title="Test exception", description="Test description")
 
     rana_context.log_exception(exception)
@@ -484,7 +545,9 @@ def test_log_exception_process_user_error(rana_context: PrefectRanaContext, pref
     )
 
 
-def test_log_exception_process_internal_error(rana_context: PrefectRanaContext, prefect_rana_runtime: Mock):
+def test_log_exception_process_internal_error(
+    rana_context: PrefectRanaContext, prefect_rana_runtime: Mock
+):
     exception = ValueError("Test exception")
 
     rana_context.log_exception(exception)
@@ -495,13 +558,21 @@ def test_log_exception_process_internal_error(rana_context: PrefectRanaContext, 
 
 
 def test_get_lizard_raster_dataset(
-    rana_context: PrefectRanaContext, lizard_raster_layer_gateway: Mock, rana_dataset_gateway: Mock
+    rana_context: PrefectRanaContext,
+    lizard_raster_layer_gateway: Mock,
+    rana_dataset_gateway: Mock,
 ):
-    lizard_raster_layer_gateway.namespace = AnyHttpUrl("https://example.com/lizard_raster")
+    lizard_raster_layer_gateway.namespace = AnyHttpUrl(
+        "https://example.com/lizard_raster"
+    )
     dataset = RanaDataset(
         id="DatasetId",
         title="Test Dataset",
-        resource_identifier=[ResourceIdentifier(code="id-1", link=AnyHttpUrl("https://example.com/lizard_raster"))],
+        resource_identifier=[
+            ResourceIdentifier(
+                code="id-1", link=AnyHttpUrl("https://example.com/lizard_raster")
+            )
+        ],
     )
     rana_dataset_gateway.get.return_value = dataset
     lizard_raster_layer_gateway.get.return_value = Mock(LizardRaster)
@@ -509,7 +580,8 @@ def test_get_lizard_raster_dataset(
     actual = rana_context.get_lizard_raster_dataset("DatasetId")
 
     assert actual == RanaDatasetLizardRaster(
-        **dataset.model_dump(exclude_none=True), lizard_raster=lizard_raster_layer_gateway.get.return_value
+        **dataset.model_dump(exclude_none=True),
+        lizard_raster=lizard_raster_layer_gateway.get.return_value,
     )
     rana_dataset_gateway.get.assert_called_once_with("DatasetId")
     lizard_raster_layer_gateway.get.assert_called_once_with(
@@ -518,7 +590,9 @@ def test_get_lizard_raster_dataset(
 
 
 def test_get_lizard_raster_dataset_no_lizard_raster(
-    rana_context: PrefectRanaContext, lizard_raster_layer_gateway: Mock, rana_dataset_gateway: Mock
+    rana_context: PrefectRanaContext,
+    lizard_raster_layer_gateway: Mock,
+    rana_dataset_gateway: Mock,
 ):
     dataset = rana_dataset_gateway.get.return_value
     dataset.get_id_for_namespace.return_value = None
@@ -529,7 +603,9 @@ def test_get_lizard_raster_dataset_no_lizard_raster(
     assert not lizard_raster_layer_gateway.get.called
 
 
-def test_get_lizard_raster(rana_context: PrefectRanaContext, lizard_raster_layer_gateway: Mock):
+def test_get_lizard_raster(
+    rana_context: PrefectRanaContext, lizard_raster_layer_gateway: Mock
+):
     actual = rana_context.get_lizard_raster("RasterId")
 
     assert actual is lizard_raster_layer_gateway.get.return_value

@@ -1,9 +1,13 @@
 from unittest.mock import Mock
 
 from pytest import fixture
+
 from rana_process_sdk import RanaApiProvider
 from rana_process_sdk.domain import FileUpload
-from rana_process_sdk.infrastructure import PrefectRanaSchematisationGateway, RanaSchematisationGateway
+from rana_process_sdk.infrastructure import (
+    PrefectRanaSchematisationGateway,
+    RanaSchematisationGateway,
+)
 
 MODULE = "rana_process_sdk.infrastructure.rana_files_gateway"
 
@@ -27,5 +31,7 @@ def test_upload(gateway: RanaSchematisationGateway, provider: Mock):
 
     assert result == FileUpload.model_validate(file_json)
     provider.job_request.assert_called_once_with(
-        "POST", "threedi-schematisations", params={"path": "path", "schematisation_id": "abc123", "branch": "main"}
+        "POST",
+        "threedi-schematisations",
+        params={"path": "path", "schematisation_id": "abc123", "branch": "main"},
     )

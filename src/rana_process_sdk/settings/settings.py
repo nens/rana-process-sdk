@@ -2,7 +2,11 @@ from functools import lru_cache
 from os import environ
 
 from pydantic import AnyHttpUrl, AnyUrl, BaseModel, SecretStr
-from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 from pydantic_settings_yaml.base_settings import YamlConfigSettingsSource
 
 __all__ = ["get_settings", "LizardSettings"]

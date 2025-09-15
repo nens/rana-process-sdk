@@ -4,6 +4,7 @@ from typing import Any
 from prefect.utilities.callables import parameter_schema
 from pydantic import BaseModel
 from pytest import mark
+
 from rana_process_sdk import (
     Directory,
     File,
@@ -33,7 +34,14 @@ from rana_process_sdk.domain import Json
         (Raster, ["raster"], {}, "RanaFile", "rana_file", {"id": "file_picker"}),
         (Vector, ["vector"], {}, "RanaFile", "rana_file", {"id": "file_picker"}),
         (Scenario, ["scenario"], {}, "RanaFile", "rana_file", {"id": "file_picker"}),
-        (ThreediSchematisation, ["threedi_schematisation"], {}, "RanaFile", "rana_file", {"id": "file_picker"}),
+        (
+            ThreediSchematisation,
+            ["threedi_schematisation"],
+            {},
+            "RanaFile",
+            "rana_file",
+            {"id": "file_picker"},
+        ),
         (
             StudyArea,
             ["vector"],

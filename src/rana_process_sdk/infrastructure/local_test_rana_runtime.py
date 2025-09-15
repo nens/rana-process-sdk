@@ -27,13 +27,19 @@ class LocalTestRanaRuntime(RanaRuntime):
         settings: LocalTestSettings | None = None,
         cleanup_workdir: bool = False,
     ) -> None:
-        working_dir_path = Path(working_dir) if not isinstance(working_dir, Path) else working_dir
-        assert (
-            working_dir_path.parent.exists()
-        ), f"Workdir must be placed in a existing directory {working_dir_path.parent}"
+        working_dir_path = (
+            Path(working_dir) if not isinstance(working_dir, Path) else working_dir
+        )
+        assert working_dir_path.parent.exists(), (
+            f"Workdir must be placed in a existing directory {working_dir_path.parent}"
+        )
         self._job_working_dir = working_dir_path
-        project_dir_path = Path(project_dir) if not isinstance(project_dir, Path) else project_dir
-        assert project_dir_path.exists(), f"Project directory {project_dir_path} does not exist"
+        project_dir_path = (
+            Path(project_dir) if not isinstance(project_dir, Path) else project_dir
+        )
+        assert project_dir_path.exists(), (
+            f"Project directory {project_dir_path} does not exist"
+        )
         self.project_dir = project_dir_path
         self.settings = settings
         if settings and settings.threedi:
@@ -89,7 +95,11 @@ class LocalTestRanaRuntime(RanaRuntime):
 
     def set_result(self, result: Json) -> None:
         self.logger.info("result            | value")
-        self.logger.info("----------------- | -------------------------------------------------")
+        self.logger.info(
+            "----------------- | -------------------------------------------------"
+        )
         for item in result.items():
             self.logger.info(f"{item[0]: <17} | {item[1]}")
-        self.logger.info("---------------   | -------------------------------------------------")
+        self.logger.info(
+            "---------------   | -------------------------------------------------"
+        )
