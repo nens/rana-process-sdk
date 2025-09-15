@@ -16,7 +16,13 @@ license = "MIT"
 classifiers = ["Programming Language :: Python"]
 keywords = []
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "pydantic>=2.9",
+    "pydantic-settings-yaml>=0.2",
+    "prefect>=3.2",
+    "urllib3>=2",
+    "threedi-api-client>=4.1",
+]
 
 [project.urls]
 homepage = "https://github.com/nens/rana-process-sdk"
@@ -47,4 +53,4 @@ venvPath = "."
 venv = ".venv"
 
 [dependency-groups]
-dev = ["pytest>=8.4.2", "pytest-cov>=6.3.0", "pytest-sugar>=1.1.1"]
+test = ["pytest>=8.4.2", "pytest-cov>=6.3.0"]
