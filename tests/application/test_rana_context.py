@@ -6,7 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, SecretStr, ValidationError
 from pytest import fixture, mark, raises
-from rana_sdk import (
+from rana_process_sdk import (
     Directory,
     DirectoryPickerWidget,
     File,
@@ -19,10 +19,10 @@ from rana_sdk import (
     UsingWidget,
     transfer_extension,
 )
-from rana_sdk.application.rana_context import DirectoryOutput, FileOutput, expected_files
-from rana_sdk.application.widgets.file_picker import ExpectedFile
-from rana_sdk.domain import FileStat, ProcessUserError, ThreediApiKey
-from rana_sdk.infrastructure import (
+from rana_process_sdk.application.rana_context import DirectoryOutput, FileOutput, expected_files
+from rana_process_sdk.application.widgets.file_picker import ExpectedFile
+from rana_process_sdk.domain import FileStat, ProcessUserError, ThreediApiKey
+from rana_process_sdk.infrastructure import (
     LizardRasterLayerGateway,
     RanaDatasetGateway,
     RanaRuntime,
@@ -30,7 +30,7 @@ from rana_sdk.infrastructure import (
     ThreediApiKeyGateway,
 )
 
-MODULE = "rana_sdk.application.base_rana_context"
+MODULE = "rana_process_sdk.application.base_rana_context"
 
 
 class Output(RanaProcessParameters):

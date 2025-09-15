@@ -1,13 +1,13 @@
 from base64 import b64encode
 from unittest.mock import patch
 
-from process_settings.settings import LizardSettings
 from pydantic import SecretStr
 from pydantic_core import Url
 from pytest import fixture
-from rana_sdk.infrastructure.lizard_api_provider import LizardApiProvider
+from rana_process_sdk.infrastructure.lizard_api_provider import LizardApiProvider
+from rana_process_sdk.settings import LizardSettings
 
-MODULE = "rana_sdk.infrastructure.lizard_api_provider"
+MODULE = "rana_process_sdk.infrastructure.lizard_api_provider"
 
 
 @fixture

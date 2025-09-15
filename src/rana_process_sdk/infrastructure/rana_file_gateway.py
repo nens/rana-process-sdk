@@ -1,7 +1,7 @@
 __all__ = ["RanaFileGateway"]
 from http import HTTPStatus
 
-from rana_sdk.domain.files import History
+from rana_process_sdk.domain.files import History
 
 from ..domain import DoesNotExist, FileStat, FileUpload, Json
 from .api_exception import ApiException

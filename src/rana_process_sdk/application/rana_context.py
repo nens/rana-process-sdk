@@ -29,7 +29,7 @@ from .types import RanaPath, ThreediSchematisation, path_picker_from_json_prop
 from .widgets import DirectoryPickerWidget, PathPickerWidget
 
 if TYPE_CHECKING:
-    from rana_sdk import PrefectRanaContext
+    from rana_process_sdk import PrefectRanaContext
 
 __all__ = ["RanaContext", "transfer_extension"]
 
@@ -75,7 +75,7 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
     output_paths: dict[str, str] = {}  # maps output field name -> path in project
 
     def to_prefect_context(self) -> "PrefectRanaContext[T]":
-        from rana_sdk import PrefectRanaContext
+        from rana_process_sdk import PrefectRanaContext
 
         output_type = cast(type[T], get_args(self.model_fields["output"].annotation)[0])
         return PrefectRanaContext[output_type](output=self.output, output_paths=self.output_paths)  # type: ignore

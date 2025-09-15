@@ -1,7 +1,7 @@
 from uuid import uuid4
 
 from pytest import fixture
-from rana_sdk.domain import LizardRaster
+from rana_process_sdk.domain import LizardRaster
 
 
 @fixture

@@ -4,7 +4,7 @@ from unittest.mock import Mock, PropertyMock, patch
 
 from pydantic import ValidationError
 from pytest import fixture, raises
-from rana_sdk import (
+from rana_process_sdk import (
     Directory,
     File,
     PrefectRanaContext,
@@ -13,8 +13,8 @@ from rana_sdk import (
     Raster,
     ThreediSchematisation,
 )
-from rana_sdk.domain import FileStat
-from rana_sdk.infrastructure import (
+from rana_process_sdk.domain import FileStat
+from rana_process_sdk.infrastructure import (
     LizardRasterLayerGateway,
     RanaDatasetGateway,
     RanaFileGateway,
@@ -23,7 +23,7 @@ from rana_sdk.infrastructure import (
     ThreediApiKeyGateway,
 )
 
-MODULE = "rana_sdk.application.local_test_rana_context"
+MODULE = "rana_process_sdk.application.local_test_rana_context"
 
 
 class Output(RanaProcessParameters):

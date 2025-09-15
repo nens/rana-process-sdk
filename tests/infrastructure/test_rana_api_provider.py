@@ -4,11 +4,11 @@ from uuid import uuid4
 from pydantic import SecretStr
 from pydantic_core import Url
 from pytest import fixture, mark
-from rana_sdk import PrefectRanaApiProvider
-from rana_sdk.infrastructure import ApiProvider, RanaRuntime
-from rana_sdk.infrastructure.rana_api_provider import _get_headers, _get_job_path
+from rana_process_sdk import PrefectRanaApiProvider
+from rana_process_sdk.infrastructure import ApiProvider, RanaRuntime
+from rana_process_sdk.infrastructure.rana_api_provider import _get_headers, _get_job_path
 
-MODULE = "rana_sdk.infrastructure.rana_api_provider"
+MODULE = "rana_process_sdk.infrastructure.rana_api_provider"
 
 
 @fixture

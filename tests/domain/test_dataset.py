@@ -1,6 +1,6 @@
 from pydantic import AnyHttpUrl
 from pytest import fixture, mark
-from rana_sdk.domain.dataset import RanaDataset, ResourceIdentifier
+from rana_process_sdk.domain.dataset import RanaDataset, ResourceIdentifier
 
 
 @fixture

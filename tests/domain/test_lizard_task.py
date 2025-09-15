@@ -1,7 +1,7 @@
 from uuid import uuid4
 
 from pytest import mark
-from rana_sdk.domain import LizardTask
+from rana_process_sdk.domain import LizardTask
 
 
 @mark.parametrize(

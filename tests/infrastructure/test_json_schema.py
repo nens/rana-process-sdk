@@ -1,6 +1,6 @@
 from pytest import mark
-from rana_sdk.domain import Json
-from rana_sdk.infrastructure import (
+from rana_process_sdk.domain import Json
+from rana_process_sdk.infrastructure import (
     is_optional,
     lookup_ref,
     maybe_follow_ref,

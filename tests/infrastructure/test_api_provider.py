@@ -4,9 +4,9 @@ from http import HTTPStatus
 from unittest import mock
 
 import pytest
-from rana_sdk.infrastructure import ApiException, ApiProvider
+from rana_process_sdk.infrastructure import ApiException, ApiProvider
 
-MODULE = "rana_sdk.infrastructure.api_provider"
+MODULE = "rana_process_sdk.infrastructure.api_provider"
 
 
 @pytest.fixture

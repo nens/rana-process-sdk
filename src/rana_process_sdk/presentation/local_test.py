@@ -4,7 +4,7 @@ import typing
 from prefect import Flow
 from pydantic._internal._model_construction import ModelMetaclass
 
-from rana_sdk.domain.rana_process_parameters import RanaProcessParameters
+from rana_process_sdk.domain.rana_process_parameters import RanaProcessParameters
 
 from .. import LocalTestRanaContext
 from ..infrastructure import LocalTestRanaRuntime

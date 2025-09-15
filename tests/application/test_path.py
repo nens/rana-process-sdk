@@ -4,7 +4,7 @@ from typing import Any
 from prefect.utilities.callables import parameter_schema
 from pydantic import BaseModel
 from pytest import mark
-from rana_sdk import (
+from rana_process_sdk import (
     Directory,
     File,
     Raster,
@@ -14,8 +14,8 @@ from rana_sdk import (
     Vector,
     path_picker_from_json_prop,
 )
-from rana_sdk.application.types.path import FilePickerWidget
-from rana_sdk.domain import Json
+from rana_process_sdk.application.types.path import FilePickerWidget
+from rana_process_sdk.domain import Json
 
 
 @mark.parametrize(

@@ -2,7 +2,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, TypeAdapter
 from pytest import fixture
-from rana_sdk import UsingWidget, Widget
+from rana_process_sdk import UsingWidget, Widget
 
 
 @fixture

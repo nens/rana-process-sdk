@@ -4,7 +4,7 @@ from prefect.blocks.core import Block
 from sentry_sdk import init, set_context, set_tag
 from sentry_sdk.types import Event, Hint
 
-from rana_sdk.domain import FormattedException, ProcessUserError
+from rana_process_sdk.domain import FormattedException, ProcessUserError
 
 from .prefect_rana_runtime import PrefectRanaRuntime
 

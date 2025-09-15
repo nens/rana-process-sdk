@@ -2,10 +2,10 @@ import logging
 from pathlib import Path
 from uuid import UUID
 
-from process_settings.local_test_settings import LocalTestSettings
 from pydantic import SecretStr
 
-import rana_sdk
+import rana_process_sdk
+from rana_process_sdk.settings import LocalTestSettings
 
 from ..domain import Json, ThreediApiKey
 from .rana_runtime import RanaRuntime
@@ -78,7 +78,7 @@ class LocalTestRanaRuntime(RanaRuntime):
 
     @property
     def logger(self) -> logging.Logger:
-        logger = logging.getLogger(rana_sdk.__name__)
+        logger = logging.getLogger(rana_process_sdk.__name__)
         logger.setLevel(logging.INFO)
         logger.propagate = True
         return logger

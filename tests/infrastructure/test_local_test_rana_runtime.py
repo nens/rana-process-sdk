@@ -2,10 +2,10 @@ from pathlib import Path
 from unittest.mock import Mock
 from uuid import uuid4
 
-from process_settings.local_test_settings import LocalTestSettings
 from pydantic import SecretStr
 from pytest import LogCaptureFixture, fixture
-from rana_sdk.infrastructure import LocalTestRanaRuntime
+from rana_process_sdk.infrastructure import LocalTestRanaRuntime
+from rana_process_sdk.settings import LocalTestSettings
 
 
 @fixture

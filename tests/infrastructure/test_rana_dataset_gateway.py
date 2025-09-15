@@ -2,9 +2,9 @@ from unittest.mock import Mock
 
 from pydantic import AnyHttpUrl
 from pytest import fixture, raises
-from rana_sdk.domain import DoesNotExist, Json
-from rana_sdk.domain.dataset import RanaDataset, ResourceIdentifier
-from rana_sdk.infrastructure import RanaApiProvider, RanaDatasetGateway
+from rana_process_sdk.domain import DoesNotExist, Json
+from rana_process_sdk.domain.dataset import RanaDataset, ResourceIdentifier
+from rana_process_sdk.infrastructure import RanaApiProvider, RanaDatasetGateway
 
 
 @fixture

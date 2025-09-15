@@ -1,6 +1,6 @@
 from prefect.utilities.callables import parameter_schema
 from pytest import mark
-from rana_sdk import (
+from rana_process_sdk import (
     Geometry,
     GeometryCollection,
     LineString,

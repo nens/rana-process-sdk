@@ -1,8 +1,8 @@
 from typing import Any
 
-from process_settings import get_settings
-from process_settings.settings import LizardSettings
 from urllib3 import make_headers
+
+from rana_process_sdk.settings import LizardSettings, get_settings
 
 from .api_provider import ApiProvider
 

@@ -3,13 +3,13 @@ from unittest.mock import Mock, patch
 from uuid import uuid4
 
 from pytest import fixture, mark
-from rana_sdk.domain import Json
-from rana_sdk.infrastructure import SentryBlock
-from rana_sdk.infrastructure.sentry_prefect_integration import prefect_log_filter
+from rana_process_sdk.domain import Json
+from rana_process_sdk.infrastructure import SentryBlock
+from rana_process_sdk.infrastructure.sentry_prefect_integration import prefect_log_filter
 from sentry_sdk import get_global_scope, get_isolation_scope
 from sentry_sdk.types import Event
 
-MODULE = "rana_sdk.infrastructure.sentry_prefect_integration"
+MODULE = "rana_process_sdk.infrastructure.sentry_prefect_integration"
 
 
 @fixture
@@ -91,7 +91,7 @@ def test_filter_filter_finished_in_state_failed(event):
 def test_filter_formatted_exception(event):
     event["logentry"][
         "message"
-    ] = '{"title": "Process execution encountered an exception: ProcessUserError: Polygon not found", "traceback": "Traceback (most recent call last):\\n  File \\"/code/src/rana_sdk/application/rana_flow.py\\", line 59, in wrapper\\n    return func(*args, **kwargs)\\n           ^^^^^^^^^^^^^^^^^^^^^\\n  File \\"/code/src/rana_flows/define_study_area.py\\", line 155, in define_study_area\\n    check_connected_polygons(selected_polygons)\\n  File \\"/code/src/rana_flows/define_study_area_lib/gdal_functions.py\\", line 189, in check_connected_polygons\\n    raise ProcessUserError(\\"Polygon not found\\", \\"Polygon is empty or not found.\\")\\nrana_sdk.application.exceptions.ProcessUserError: (\'Polygon not found\', \'Polygon is empty or not found.\')\\n", "error_type": "user", "description": "Polygon is empty or not found."}'
+    ] = '{"title": "Process execution encountered an exception: ProcessUserError: Polygon not found", "traceback": "Traceback (most recent call last):\\n  File \\"/code/src/rana_process_sdk/application/rana_flow.py\\", line 59, in wrapper\\n    return func(*args, **kwargs)\\n           ^^^^^^^^^^^^^^^^^^^^^\\n  File \\"/code/src/rana_flows/define_study_area.py\\", line 155, in define_study_area\\n    check_connected_polygons(selected_polygons)\\n  File \\"/code/src/rana_flows/define_study_area_lib/gdal_functions.py\\", line 189, in check_connected_polygons\\n    raise ProcessUserError(\\"Polygon not found\\", \\"Polygon is empty or not found.\\")\\nrana_process_sdk.application.exceptions.ProcessUserError: (\'Polygon not found\', \'Polygon is empty or not found.\')\\n", "error_type": "user", "description": "Polygon is empty or not found."}'
 
     assert not prefect_log_filter(event, {})
 

@@ -7,9 +7,9 @@ from prefect.client.schemas import FlowRun
 from prefect.context import EngineContext, SettingsContext
 from prefect.settings import Settings
 from pytest import fixture
-from rana_sdk.infrastructure import PrefectRanaRuntime
+from rana_process_sdk.infrastructure import PrefectRanaRuntime
 
-MODULE = "rana_sdk.infrastructure.prefect_rana_runtime"
+MODULE = "rana_process_sdk.infrastructure.prefect_rana_runtime"
 
 
 @fixture

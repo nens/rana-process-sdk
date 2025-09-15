@@ -7,7 +7,7 @@ from uuid import UUID
 from pydantic import SecretStr
 from threedi_api_client.files import download_file, upload_file
 
-from rana_sdk.domain.dataset import RanaDatasetLizardRaster
+from rana_process_sdk.domain.dataset import RanaDatasetLizardRaster
 
 from ..domain import FileStat, History, Json, ProcessUserError, RanaProcessParameters, ThreediApiKey
 from ..infrastructure import (

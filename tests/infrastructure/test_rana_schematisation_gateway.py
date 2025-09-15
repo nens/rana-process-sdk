@@ -1,11 +1,11 @@
 from unittest.mock import Mock
 
 from pytest import fixture
-from rana_sdk import RanaApiProvider
-from rana_sdk.domain import FileUpload
-from rana_sdk.infrastructure import PrefectRanaSchematisationGateway, RanaSchematisationGateway
+from rana_process_sdk import RanaApiProvider
+from rana_process_sdk.domain import FileUpload
+from rana_process_sdk.infrastructure import PrefectRanaSchematisationGateway, RanaSchematisationGateway
 
-MODULE = "rana_sdk.infrastructure.rana_files_gateway"
+MODULE = "rana_process_sdk.infrastructure.rana_files_gateway"
 
 
 @fixture

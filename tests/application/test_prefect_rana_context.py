@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import AnyHttpUrl, SecretStr, ValidationError
 from pytest import fixture, mark, raises
-from rana_sdk import (
+from rana_process_sdk import (
     Directory,
     File,
     PrefectRanaContext,
@@ -15,10 +15,10 @@ from rana_sdk import (
     ThreediSchematisation,
     transfer_extension,
 )
-from rana_sdk.domain import FileStat, FileUpload, History, ProcessUserError, ThreediApiKey
-from rana_sdk.domain.dataset import RanaDataset, RanaDatasetLizardRaster, ResourceIdentifier
-from rana_sdk.domain.lizard_raster import LizardRaster
-from rana_sdk.infrastructure import (
+from rana_process_sdk.domain import FileStat, FileUpload, History, ProcessUserError, ThreediApiKey
+from rana_process_sdk.domain.dataset import RanaDataset, RanaDatasetLizardRaster, ResourceIdentifier
+from rana_process_sdk.domain.lizard_raster import LizardRaster
+from rana_process_sdk.infrastructure import (
     SENTRY_BLOCK_NAME,
     LizardRasterLayerGateway,
     PrefectRanaRuntime,
@@ -29,7 +29,7 @@ from rana_sdk.infrastructure import (
     ThreediApiKeyGateway,
 )
 
-MODULE = "rana_sdk.application.prefect_rana_context"
+MODULE = "rana_process_sdk.application.prefect_rana_context"
 
 
 class Output(RanaProcessParameters):

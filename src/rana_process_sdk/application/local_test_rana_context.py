@@ -5,7 +5,7 @@ from pathlib import Path
 from types import TracebackType
 from typing import ClassVar, Generic, TypeVar
 
-from process_settings.local_test_settings import LocalTestSettings
+from rana_process_sdk.settings import LocalTestSettings
 
 from ..domain import Json, RanaDatasetLizardRaster, RanaProcessParameters, ThreediApiKey
 from ..infrastructure import (

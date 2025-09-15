@@ -2,8 +2,8 @@ from http import HTTPStatus
 from unittest.mock import Mock
 
 from pytest import fixture
-from rana_sdk.domain import ThreediApiKey
-from rana_sdk.infrastructure import ApiException, RanaApiProvider, ThreediApiKeyGateway
+from rana_process_sdk.domain import ThreediApiKey
+from rana_process_sdk.infrastructure import ApiException, RanaApiProvider, ThreediApiKeyGateway
 
 
 @fixture

@@ -1,8 +1,7 @@
 from abc import abstractmethod
 
-from process_settings import get_settings
-
 from ..domain import Json
+from ..settings import get_settings
 from .api_provider import ApiProvider
 from .local_test_rana_runtime import LocalTestRanaRuntime
 from .prefect_rana_runtime import PrefectRanaRuntime

@@ -4,8 +4,8 @@ from uuid import uuid4
 
 from pydantic import AnyHttpUrl
 from pytest import fixture, raises
-from rana_sdk.domain import DoesNotExist
-from rana_sdk.infrastructure import ApiException, LizardApiProvider, LizardRasterLayerGateway
+from rana_process_sdk.domain import DoesNotExist
+from rana_process_sdk.infrastructure import ApiException, LizardApiProvider, LizardRasterLayerGateway
 
 
 @fixture

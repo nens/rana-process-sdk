@@ -8,10 +8,10 @@ from unittest.mock import MagicMock, Mock, patch
 from prefect import Flow
 from pydantic import Field
 from pytest import fixture, mark, raises
-from rana_sdk import PrefectRanaContext, RanaContext, RanaProcessParameters, rana_flow
-from rana_sdk.application.local_test_rana_context import LocalTestRanaContext
+from rana_process_sdk import PrefectRanaContext, RanaContext, RanaProcessParameters, rana_flow
+from rana_process_sdk.application.local_test_rana_context import LocalTestRanaContext
 
-MODULE = "rana_sdk.application.rana_flow"
+MODULE = "rana_process_sdk.application.rana_flow"
 
 
 class Output(RanaProcessParameters):

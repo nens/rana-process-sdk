@@ -1,5 +1,5 @@
-from rana_sdk import RanaProcessParameters
-from rana_sdk.infrastructure import maybe_follow_ref
+from rana_process_sdk import RanaProcessParameters
+from rana_process_sdk.infrastructure import maybe_follow_ref
 
 
 class Parameters(RanaProcessParameters):

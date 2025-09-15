@@ -1,8 +1,8 @@
 from typing import Any
 
 from pytest import mark
-from rana_sdk import FilePickerWidget
-from rana_sdk.domain import Json
+from rana_process_sdk import FilePickerWidget
+from rana_process_sdk.domain import Json
 
 
 @mark.parametrize(

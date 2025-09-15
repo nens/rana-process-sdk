@@ -1,4 +1,4 @@
-"""Common type definitions for rana_sdk."""
+"""Common type definitions for rana_process_sdk."""
 
 from typing import Any
 
