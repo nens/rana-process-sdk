@@ -23,3 +23,14 @@ If you need a new dependency (like `requests`), add it in
 `pyproject.toml` in `dependencies`:
 
     $ uv add requests
+
+## Release
+
+Make sure you have zestreleaser_ installed.
+
+    fullrelease
+
+When you created a tag, it will be uploaded automatically to pypi_ by a Github Action.
+
+.. _zestreleaser: https://zestreleaser.readthedocs.io/en/latest/
+.. _pypi: https://pypi.org/project/threedi-modelchecker/
