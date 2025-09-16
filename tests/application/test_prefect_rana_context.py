@@ -626,3 +626,13 @@ def test_setup_logger_err(rana_context: PrefectRanaContext, sentry_block_load: M
     rana_context.setup_logger()
 
     sentry_block_load.assert_called_once_with(name=SENTRY_BLOCK_NAME)
+
+
+def test_get_dataset(
+    rana_context: PrefectRanaContext,
+    rana_dataset_gateway: Mock,
+):
+    actual = rana_context.get_dataset("DatasetId")
+
+    assert actual == rana_dataset_gateway.get.return_value
+    rana_dataset_gateway.get.assert_called_once_with("DatasetId")

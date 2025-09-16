@@ -6,12 +6,21 @@ from .rana_api_provider import PrefectRanaApiProvider
 
 
 class RanaDatasetMapper:
+    def _map_link(self, link: dict) -> dict | None:
+        return {
+            "protocol": link["protocol"],
+            "name": link["nameObject"].get("default") or None,
+            "url": link["urlObject"].get("default") or None,
+        }
+        return None
+
     def to_internal(self, external: Json) -> RanaDataset:
         """Map external dataset representation to internal RanaDataset."""
         return RanaDataset(
             id=external["id"],
             title=external["resourceTitleObject"]["default"],
             resource_identifier=external["resourceIdentifier"],
+            links=[self._map_link(x) for x in external["link"]],
         )
 
 

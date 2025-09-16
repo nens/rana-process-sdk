@@ -7,7 +7,14 @@ from typing import ClassVar, Generic, TypeVar
 
 from rana_process_sdk.settings import LocalTestSettings
 
-from ..domain import Json, RanaDatasetLizardRaster, RanaProcessParameters, ThreediApiKey
+from ..domain import (
+    Json,
+    ProcessUserError,
+    RanaDataset,
+    RanaDatasetLizardRaster,
+    RanaProcessParameters,
+    ThreediApiKey,
+)
 from ..infrastructure import (
     LizardApiProvider,
     LizardRasterLayerGateway,
@@ -104,11 +111,25 @@ class LocalTestRanaContext(RanaContext[T], Generic[T]):
         provider = LizardApiProvider(lizard_settings=self._settings().lizard)
         return LizardRasterLayerGateway(provider)
 
+    def get_dataset(self, id: str) -> RanaDataset:
+        return self._settings().datasets[id]
+
     def get_lizard_raster_dataset(self, id: str) -> RanaDatasetLizardRaster:
         dataset = self._settings().datasets[id]
-        return RanaDatasetLizardRaster(
-            **dataset.model_dump(exclude_none=True),
-            lizard_raster=self.get_lizard_raster(dataset.lizard_raster_id),
+        if lizard_id := dataset.get_id_for_namespace(
+            self.lizard_raster_layer_gateway.namespace
+        ):
+            return RanaDatasetLizardRaster(
+                **dataset.model_dump(exclude_none=True),
+                lizard_raster=self.get_lizard_raster(lizard_id),
+            )
+        raise ProcessUserError(
+            "Given dataset is not recognized as a Lizard raster",
+            description=(
+                f"The selected dataset '{dataset.title}' dataset does not have a "
+                f"Lizard raster layer associated with it "
+                f"(dataset id={dataset.id}, lizard_id={lizard_id or 'null'})."
+            ),
         )
 
     def _threedi_api_key_add(self) -> ThreediApiKey:

@@ -13,6 +13,7 @@ from ..domain import (
     LizardRaster,
     ProcessInternalError,
     ProcessUserError,
+    RanaDataset,
     RanaDatasetLizardRaster,
     RanaProcessParameters,
     ThreediApiKey,
@@ -297,6 +298,12 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
                     meta=expected_file.meta_values,
                 )
         return RanaPath(id=rana_path)  # TODO put the actual ref here
+
+    def get_dataset(self, id: str) -> RanaDataset:
+        """Retrieve a dataset by its id in Rana."""
+        raise NotImplementedError(
+            "get_dataset method must be implemented in a subclass"
+        )
 
     def get_lizard_raster_dataset(self, id: str) -> RanaDatasetLizardRaster:
         """Retrieve a dataset with associated lizard raster by Rana dataset id."""
