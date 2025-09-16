@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.2 (unreleased)
+## 0.2 (2025-09-16)
 
 
 - Added `context.get_dataset`.
