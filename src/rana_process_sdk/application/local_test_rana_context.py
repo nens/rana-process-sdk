@@ -111,8 +111,7 @@ class LocalTestRanaContext(RanaContext[T], Generic[T]):
         return LizardRasterLayerGateway(provider)
 
     def get_dataset(self, id: str) -> RanaDataset:
-        dataset = self._settings().datasets[id]
-        return RanaDataset(id=id, title=dataset.title, links=dataset.links)
+        return self._settings().datasets[id]
 
     def get_lizard_raster_dataset(self, id: str) -> RanaDatasetLizardRaster:
         dataset = self._settings().datasets[id]

@@ -9,7 +9,7 @@ from pydantic_settings import (
 )
 from pydantic_settings_yaml.base_settings import YamlConfigSettingsSource
 
-from ..domain.dataset import DatasetLink
+from ..domain import RanaDataset
 from .settings import LizardSettings
 
 __all__ = ["get_local_test_settings", "LocalTestSettings"]
@@ -21,17 +21,10 @@ class TestThreediSettings(BaseModel):
     organisation: UUID
 
 
-class TestDataset(BaseModel):
-    id: str
-    title: str
-    lizard_raster_id: str | None
-    links: list[DatasetLink] = []
-
-
 class LocalTestSettings(BaseSettings):
-    lizard: LizardSettings
-    threedi: TestThreediSettings
-    datasets: dict[str, TestDataset] = {}
+    lizard: LizardSettings | None = None
+    threedi: TestThreediSettings | None = None
+    datasets: dict[str, RanaDataset] = {}
 
     @classmethod
     def settings_customise_sources(
