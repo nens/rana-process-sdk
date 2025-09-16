@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from unittest.mock import Mock, patch
 from uuid import uuid4
 
@@ -11,6 +12,7 @@ from rana_process_sdk.infrastructure.rana_api_provider import (
     _get_headers,
     _get_job_path,
 )
+from rana_process_sdk.settings.settings import Settings
 
 MODULE = "rana_process_sdk.infrastructure.rana_api_provider"
 
@@ -18,6 +20,14 @@ MODULE = "rana_process_sdk.infrastructure.rana_api_provider"
 @fixture
 def runtime() -> RanaRuntime:
     return Mock(RanaRuntime)
+
+
+@fixture
+def get_settings() -> Iterator[Mock]:
+    result = Mock(Settings)
+    result.rana_api_url = Url("http://rana-api/")
+    with patch(f"{MODULE}.get_settings", return_value=result) as get_settings:
+        yield get_settings
 
 
 def test_get_headers(runtime: Mock):
@@ -35,19 +45,11 @@ def test_get_job_path():
     assert actual == f"v1-alpha/tenants/tenantId/jobs/{job_id}"
 
 
-@patch(f"{MODULE}.get_settings")
 def test_init(get_settings: Mock, runtime: Mock):
-    get_settings.return_value.rana_api_url = Url("http://rana-api/")
-
     provider = PrefectRanaApiProvider(runtime)
     assert provider._url == "http://rana-api/"
 
     get_settings.assert_called_once_with()
-
-
-@fixture
-def prefect_rana_api_provider(runtime: Mock) -> PrefectRanaApiProvider:
-    return PrefectRanaApiProvider(runtime)
 
 
 @mark.parametrize("path", ["/files/ls", "files/ls"])
@@ -59,10 +61,10 @@ def test_job_request(
     _get_headers: Mock,
     request_m: Mock,
     runtime: Mock,
-    prefect_rana_api_provider: PrefectRanaApiProvider,
     path: str,
+    get_settings: Mock,
 ):
-    actual = prefect_rana_api_provider.job_request(
+    actual = PrefectRanaApiProvider(runtime).job_request(
         "GET", path, {"param": "value"}, {"json": "value"}
     )
 

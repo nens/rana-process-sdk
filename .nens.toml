@@ -9,4 +9,4 @@ project_name = "rana-process-sdk"
 # Python version to use for linting and so
 python_version = '3.12'
 # Whether to run pytest in the workflow
-run_pytest = true
+run_pytest = false
