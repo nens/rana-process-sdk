@@ -4,7 +4,7 @@
 ## 0.2 (unreleased)
 
 
-- Nothing changed yet.
+- Add support for retrieving WCS and WFS links for Rana datasets.
 
 
 ## 0.1 (2025-09-16)
