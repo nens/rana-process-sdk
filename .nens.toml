@@ -1,0 +1,12 @@
+# See https://nens-meta.readthedocs.io/en/latest/config-files.html#nens-toml
+[meta]
+uses_python = true
+uses_ansible = false
+meta_version = "1.1.dev0"
+project_name = "rana-process-sdk"
+
+[meta_workflow]
+# Python version to use for linting and so
+python_version = '3.12'
+# Whether to run pytest in the workflow
+run_pytest = false

@@ -16,13 +16,23 @@ license = "MIT"
 classifiers = ["Programming Language :: Python"]
 keywords = []
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "pydantic==2.9.*",
+    "pydantic-settings-yaml>=0.2",
+    "prefect==3.2.*",
+    "urllib3>=2",
+    "threedi-api-client>=4.1",
+    "sentry-sdk>=2.16",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+]
 
 [project.urls]
 homepage = "https://github.com/nens/rana-process-sdk"
-
-[tool.pytest.ini_options]
-addopts = "--cov --cov-fail-under=80"
 
 [tool.zest-releaser]
 release = false
@@ -34,9 +44,13 @@ target-version = "py312"
 [tool.ruff.lint]
 # Default select: ["E4", "E7", "E9", "F"]
 select = ["E4", "E7", "E9", "F", "I", "UP", "C901"]
+ignore = ["UP046", "UP047", "E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["rana_process_sdk"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403"]
 
 [tool.pyright]
 # Pyright/pylance/vscode configuration.
@@ -45,6 +59,3 @@ known-first-party = ["rana_process_sdk"]
 include = "src"
 venvPath = "."
 venv = ".venv"
-
-[dependency-groups]
-dev = ["pytest>=8.4.2", "pytest-cov>=6.3.0", "pytest-sugar>=1.1.1"]

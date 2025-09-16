@@ -1,0 +1,36 @@
+name: Linux
+
+# Run on PR requests. And on main itself.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  TestLinux:
+    name: Linux, Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: "3.12"
+            pins: ""
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install python dependencies
+        run: |
+          pip install --disable-pip-version-check --upgrade pip setuptools
+          pip install -e .[test] ${{ matrix.pins }}
+          pip list
+
+      - name: Run tests
+        run: pytest --cov

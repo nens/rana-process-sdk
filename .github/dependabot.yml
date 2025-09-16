@@ -1,0 +1,10 @@
+# See https://nens-meta.readthedocs.io/en/latest/config-files.html
+version: 2
+updates:
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "quarterly"
+
+### Extra lines below are preserved ###
