@@ -7,13 +7,13 @@ from uuid import UUID
 from pydantic import SecretStr
 from threedi_api_client.files import download_file, upload_file
 
-from rana_process_sdk.domain.dataset import RanaDatasetLizardRaster
-
 from ..domain import (
     FileStat,
     History,
     Json,
     ProcessUserError,
+    RanaDataset,
+    RanaDatasetLizardRaster,
     RanaProcessParameters,
     ThreediApiKey,
 )
@@ -170,6 +170,10 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
         raise RuntimeError(
             "Schematisation does not exit, Could not retrieve the 3Di schematisation id for file: `{schematisation.id}`",
         )
+
+    def get_dataset(self, id: str) -> RanaDataset:
+        """Retrieve a dataset by its id in Rana."""
+        return self._rana_dataset_gateway.get(id)
 
     def get_lizard_raster_dataset(self, id: str) -> RanaDatasetLizardRaster:
         dataset = self._rana_dataset_gateway.get(id)
