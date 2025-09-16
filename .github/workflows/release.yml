@@ -43,6 +43,13 @@ jobs:
     name: Publish on GitHub and PyPI
     needs: [build]
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/rana-process-sdk
+    permissions:
+      id-token: write
+      contents: write  # to create releases
+
     # release on every tag
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/')
     steps:
