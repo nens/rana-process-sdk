@@ -34,9 +34,6 @@ test = [
 [project.urls]
 homepage = "https://github.com/nens/rana-process-sdk"
 
-[tool.pytest.ini_options]
-addopts = "--cov --cov-fail-under=80"
-
 [tool.zest-releaser]
 release = false
 
