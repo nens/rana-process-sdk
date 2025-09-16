@@ -3,7 +3,10 @@ from unittest.mock import Mock
 
 from pytest import fixture
 
-from rana_process_sdk import LocalTestRanaContext, LocalTestRanaRuntime
+from rana_process_sdk import (
+    LocalTestRanaContext,
+    LocalTestRanaRuntime,
+)
 from rana_process_sdk.domain import RanaDataset
 from rana_process_sdk.settings import LocalTestSettings
 
