@@ -25,12 +25,6 @@ dependencies = [
     "sentry-sdk>=2.16",
 ]
 
-[project.optional-dependencies]
-test = [
-    "pytest",
-    "pytest-cov",
-]
-
 [project.urls]
 homepage = "https://github.com/nens/rana-process-sdk"
 
@@ -60,3 +54,6 @@ known-first-party = ["rana_process_sdk"]
 include = "src"
 venvPath = "."
 venv = ".venv"
+
+[dependency-groups]
+dev = ["pytest>=8.4.2", "pytest-cov>=6.3.0"]
