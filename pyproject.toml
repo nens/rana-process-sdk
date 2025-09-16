@@ -36,6 +36,7 @@ homepage = "https://github.com/nens/rana-process-sdk"
 
 [tool.zest-releaser]
 release = false
+python-file-with-version = "src/rana_process_sdk/__init__.py"
 
 [tool.ruff]
 # See https://docs.astral.sh/ruff/configuration/ for defaults.
