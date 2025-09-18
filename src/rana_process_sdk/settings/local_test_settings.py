@@ -58,7 +58,7 @@ class LocalTestSettings(BaseSettings):
 
     model_config = SettingsConfigDict(
         secrets_dir=environ.get("SETTINGS_SECRETS_DIR", "/etc/secrets"),
-        yaml_file="config.yaml",
+        yaml_file="local_test/config.yaml",
         env_prefix="RANA_",
         env_nested_delimiter="__",
     )
