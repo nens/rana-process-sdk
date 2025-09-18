@@ -152,6 +152,7 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
             pass
         else:
             sentry_block.init()
+            sentry_block.set_tags_and_context(self._rana_runtime._flow_run)
 
     def schematisation_id(self, schematisation: ThreediSchematisation) -> int:
         file_stat = self.get_file_stat(schematisation)

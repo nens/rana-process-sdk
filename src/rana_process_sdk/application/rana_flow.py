@@ -10,6 +10,7 @@ from prefect import Flow, flow
 
 from ..application import LocalTestRanaContext, RanaContext
 from ..domain import RanaProcessParameters
+from ..infrastructure import SentryBlock
 
 __all__ = ["rana_flow"]
 
@@ -85,11 +86,13 @@ def rana_flow(
             ):
                 description_override = description_file.read()
 
-        return flow(
+        prefect_flow = flow(
             persist_result=False,
             log_prints=True,
             description=description_override,
             name=title,
         )(wrapper)
+        prefect_flow.on_crashed(SentryBlock.crash_handler)
+        return prefect_flow
 
     return rana_flow_wrapper
