@@ -4,7 +4,7 @@
 ## 0.3 (unreleased)
 
 
-- Nothing changed yet.
+- Adjust local test default yaml path to `local_test.conf`
 
 
 ## 0.2 (2025-09-16)
