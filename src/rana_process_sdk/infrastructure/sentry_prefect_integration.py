@@ -45,7 +45,6 @@ class SentryBlock(Block):
             default_integrations=default_integrations,
             enable_tracing=False,
             auto_session_tracking=False,
-            #  debug=True,
             before_send=prefect_log_filter,
         )
 
