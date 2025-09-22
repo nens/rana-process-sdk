@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.4 (unreleased)
+## 0.4 (2025-09-22)
 
 
 - Added Sentry logging for crashed processes.
