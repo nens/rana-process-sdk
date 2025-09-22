@@ -86,13 +86,12 @@ def rana_flow(
             ):
                 description_override = description_file.read()
 
-        prefect_flow = flow(
+        return flow(
             persist_result=False,
             log_prints=True,
             description=description_override,
             name=title,
+            on_crashed=[SentryBlock.crash_handler],
         )(wrapper)
-        prefect_flow.on_crashed(SentryBlock.crash_handler)
-        return prefect_flow
 
     return rana_flow_wrapper

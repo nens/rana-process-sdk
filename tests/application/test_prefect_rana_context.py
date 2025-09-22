@@ -613,11 +613,18 @@ def test_get_lizard_raster(
     lizard_raster_layer_gateway.get.assert_called_once_with("RasterId")
 
 
-def test_setup_logger(rana_context: PrefectRanaContext, sentry_block_load: Mock):
+def test_setup_logger(
+    rana_context: PrefectRanaContext,
+    sentry_block_load: Mock,
+    prefect_rana_runtime: Mock,
+):
     rana_context.setup_logger()
 
     sentry_block_load.assert_called_once_with(name=SENTRY_BLOCK_NAME)
     sentry_block_load.return_value.init.assert_called_once()
+    sentry_block_load.return_value.set_tags_and_context.assert_called_once_with(
+        prefect_rana_runtime._flow_run
+    )
 
 
 def test_setup_logger_err(rana_context: PrefectRanaContext, sentry_block_load: Mock):

@@ -1,4 +1,3 @@
-from collections.abc import Iterator
 from unittest.mock import Mock, patch
 from uuid import uuid4
 
@@ -13,14 +12,6 @@ from rana_process_sdk.infrastructure.sentry_prefect_integration import (
 )
 
 MODULE = "rana_process_sdk.infrastructure.sentry_prefect_integration"
-
-
-@fixture
-def prefect_rana_runtime() -> Iterator[Mock]:
-    with patch(f"{MODULE}.PrefectRanaRuntime") as m:
-        m.return_value.process_id = uuid4()
-        m.return_value.job_id = uuid4()
-        yield m.return_value
 
 
 @fixture
@@ -42,21 +33,15 @@ def event() -> Json:
     }
 
 
-def test_sentry_block_init(sentry_block: SentryBlock, prefect_rana_runtime: Mock):
+def test_sentry_block_init(sentry_block: SentryBlock):
     try:
         sentry_block.init()
-
         scope = get_isolation_scope()
+
         client = scope.get_client()
 
         assert client.dsn == sentry_block.dsn
         assert client.options["environment"] == sentry_block.environment
-        assert scope._tags["rana_process_id"] == str(prefect_rana_runtime.process_id)
-        assert scope._tags["rana_job_id"] == str(prefect_rana_runtime.job_id)
-        assert (
-            scope._contexts["rana_job_parameters"]
-            == prefect_rana_runtime.job_parameters
-        )
     finally:
         get_global_scope().set_client(None)
         get_global_scope().clear()
@@ -119,3 +104,54 @@ def test_filter_misformatted_exception(event):
     event["logentry"]["message"] = "{exception"
 
     assert prefect_log_filter(event, {})
+
+
+def test_sentry_block_set_tags_and_context(sentry_block: SentryBlock):
+    flow_run = Mock()
+    flow_run.deployment_id = uuid4()
+    flow_run.id = uuid4()
+    flow_run.tags = ["foo", "tenant_id_12345", "bar", "project_id_67890"]
+    flow_run.parameters = {"param1": "value1", "param2": 2}
+    try:
+        SentryBlock.set_tags_and_context(flow_run)
+        scope = get_isolation_scope()
+        assert scope._tags["rana_process_id"] == str(flow_run.deployment_id)
+        assert scope._tags["rana_job_id"] == str(flow_run.id)
+        assert scope._contexts["rana_job_parameters"] == flow_run.parameters
+        assert scope._tags["rana_tenant"] == "12345"
+        assert scope._tags["rana_project_id"] == "67890"
+    finally:
+        get_global_scope().set_client(None)
+        get_global_scope().clear()
+
+
+def test_sentry_block_set_tags_and_context_no_tags(sentry_block: SentryBlock):
+    flow_run = Mock()
+    flow_run.deployment_id = uuid4()
+    flow_run.id = uuid4()
+    flow_run.tags = []  # No tags
+    flow_run.parameters = {}
+    try:
+        SentryBlock.set_tags_and_context(flow_run)
+        scope = get_isolation_scope()
+        assert scope._contexts["rana_job_parameters"] == {}
+        assert scope._tags["rana_tenant"] is None
+        assert scope._tags["rana_project_id"] is None
+    finally:
+        get_global_scope().set_client(None)
+        get_global_scope().clear()
+
+
+@patch(f"{MODULE}.capture_message")
+def test_crash_handler(capture_message: Mock, sentry_block: SentryBlock):
+    flow = Mock()
+    flow_run = Mock(deployment_id=uuid4())
+    state = Mock()
+
+    with patch.object(SentryBlock, "set_tags_and_context") as set_tags_and_context:
+        sentry_block.crash_handler(flow, flow_run, state)
+
+    capture_message.assert_called_once_with(
+        f"Process {flow_run.deployment_id} crashed", level="error"
+    )
+    set_tags_and_context.assert_called_once_with(flow_run)
