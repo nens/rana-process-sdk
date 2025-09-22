@@ -4,7 +4,7 @@
 ## 0.3 (unreleased)
 
 
-- Nothing changed yet.
+- Added Sentry logging for crashed processes.
 
 
 ## 0.2 (2025-09-16)
