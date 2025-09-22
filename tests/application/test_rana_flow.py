@@ -16,6 +16,7 @@ from rana_process_sdk import (
     rana_flow,
 )
 from rana_process_sdk.application.local_test_rana_context import LocalTestRanaContext
+from rana_process_sdk.infrastructure import SentryBlock
 
 MODULE = "rana_process_sdk.application.rana_flow"
 
@@ -35,6 +36,8 @@ def test_rana_flow():
         return None
 
     assert isinstance(flow, Flow)
+
+    assert flow.on_crashed_hooks[0] == SentryBlock.crash_handler
 
 
 def test_rana_flow_param_spec():

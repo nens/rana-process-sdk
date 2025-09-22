@@ -1,12 +1,13 @@
 import json
 
+from prefect import Flow
 from prefect.blocks.core import Block
-from sentry_sdk import init, set_context, set_tag
+from prefect.client.schemas import FlowRun
+from prefect.states import State
+from sentry_sdk import capture_message, init, new_scope, set_context, set_tag
 from sentry_sdk.types import Event, Hint
 
 from rana_process_sdk.domain import FormattedException, ProcessUserError
-
-from .prefect_rana_runtime import PrefectRanaRuntime
 
 __all__ = ["SentryBlock", "SENTRY_BLOCK_NAME"]
 
@@ -36,24 +37,40 @@ class SentryBlock(Block):
     dsn: str
     environment: str
 
-    def init(self) -> None:
+    def init(self, default_integrations: bool = True) -> None:
         """Initialize the sentry block."""
-        prefect = PrefectRanaRuntime()
+        init(
+            self.dsn,
+            environment=self.environment,
+            default_integrations=default_integrations,
+            enable_tracing=False,
+            auto_session_tracking=False,
+            before_send=prefect_log_filter,
+        )
 
-        try:
-            init(
-                self.dsn,
-                environment=self.environment,
-                # default_integrations=False,
-                enable_tracing=False,
-                auto_session_tracking=False,
-                #  debug=True,
-                before_send=prefect_log_filter,
-            )
+    @staticmethod
+    def set_tags_and_context(flow_run: FlowRun) -> None:
+        """Set tags and context for the current scope."""
+        set_tag("rana_process_id", str(flow_run.deployment_id))
+        set_tag("rana_job_id", str(flow_run.id))
+        set_tag(
+            "rana_tenant",
+            next(
+                (tag[10:] for tag in flow_run.tags if tag.startswith("tenant_id_")),
+                None,
+            ),
+        )
+        set_tag(
+            "rana_project_id",
+            next(
+                (tag[11:] for tag in flow_run.tags if tag.startswith("project_id_")),
+                None,
+            ),
+        )
+        set_context("rana_job_parameters", flow_run.parameters)
 
-            set_tag("rana_process_id", str(prefect.process_id))
-            set_tag("rana_job_id", str(prefect.job_id))
-            set_context("rana_job_parameters", prefect.job_parameters)
-
-        except Exception as e:
-            prefect.logger.error("Failed to initialized Sentry. Inner exception: %s", e)
+    @staticmethod
+    def crash_handler(flow: Flow, flow_run: FlowRun, state: State) -> None:
+        with new_scope():
+            SentryBlock.set_tags_and_context(flow_run)
+            capture_message(f"Process {flow_run.deployment_id} crashed", level="error")
