@@ -28,6 +28,6 @@ If you need a new dependency (like `requests`), add it in
 
 Make sure you have [zest.releaser](https://zestreleaser.readthedocs.io/en/latest/) installed.
 
-    fullrelease
+    uv run fullrelease
 
 When you created a tag, it will be uploaded automatically [to pypi](https://pypi.org/project/rana-process-sdk/) by a Github Action.

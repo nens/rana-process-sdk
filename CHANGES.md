@@ -1,10 +1,16 @@
 # Changelog of rana-process-sdk
 
 
-## 0.3 (unreleased)
+## 0.4 (unreleased)
 
 
 - Added Sentry logging for crashed processes.
+
+
+## 0.3 (2025-09-18)
+
+
+- Adjust local test default yaml path to `local_test.conf`
 
 
 ## 0.2 (2025-09-16)
