@@ -355,7 +355,7 @@ def test_base_rana_context_set_output_with_raster_override_meta(
     path = tmp_path / "local.tiff"
     open(path, "a").close()
     raster_base_rana_context.set_output(
-        {"x": path}, {"x": {"physical_quantity": "digital_elevation"}}
+        {"x": path}, meta_override={"x": {"physical_quantity": "digital_elevation"}}
     )
 
     # the data_type should be set to "raster"
@@ -364,6 +364,29 @@ def test_base_rana_context_set_output_with_raster_override_meta(
         "a/foo.tiff",
         data_type="raster",
         meta={"physical_quantity": "digital_elevation"},
+    )
+    rana_runtime.set_result.assert_called_once()
+
+
+@patch.object(
+    RanaContext, "upload", return_value=RanaPath(id="a/foo.tiff", ref="abc123")
+)
+def test_base_rana_context_set_output_with_raster_override_data_type(
+    upload: Mock,
+    raster_base_rana_context: RanaContext[RasterOutput],
+    rana_runtime: Mock,
+    tmp_path: Path,
+):
+    path = tmp_path / "local.tiff"
+    open(path, "a").close()
+    raster_base_rana_context.set_output({"x": path}, data_type_override={"x": "vector"})
+
+    # the data_type should be set to "raster"
+    upload.assert_called_once_with(
+        path,
+        "a/foo.tiff",
+        data_type="vector",
+        meta={},
     )
     rana_runtime.set_result.assert_called_once()
 

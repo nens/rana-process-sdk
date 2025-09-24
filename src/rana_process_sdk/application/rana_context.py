@@ -124,7 +124,13 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
                 continue
         return result
 
-    def set_output(self, output: T | Json, meta_override: dict[str, Json] = {}) -> None:
+    def set_output(
+        self,
+        output: T | Json,
+        *,
+        data_type_override: dict[str, str] = {},
+        meta_override: dict[str, Json] = {},
+    ) -> None:
         self.output = cast(T, output)
         assert self.output is not None
         for key, path_details in self.expected_output_paths().items():
@@ -145,7 +151,9 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
                         rana_path = self.upload(
                             Path(output_value),
                             self.output_paths[key],
-                            data_type=path_details.data_type,
+                            data_type=data_type_override.get(
+                                key, path_details.data_type
+                            ),
                             meta=meta_override.get(key, path_details.meta_values),
                         )
             else:
