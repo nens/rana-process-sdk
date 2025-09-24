@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.5 (unreleased)
+## 0.5 (2025-09-24)
 
 
 - Added `data_type_override` to `RanaContext.set_output` and made arguments keyword-only.
