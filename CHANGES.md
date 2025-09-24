@@ -4,7 +4,7 @@
 ## 0.5 (unreleased)
 
 
-- Nothing changed yet.
+- Added `data_type_override` to `RanaContext.set_output` and made arguments keyword-only.
 
 
 ## 0.4 (2025-09-22)
