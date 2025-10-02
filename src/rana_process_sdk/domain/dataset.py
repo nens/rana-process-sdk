@@ -1,8 +1,14 @@
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict
+from pydantic import AnyHttpUrl, AwareDatetime, BaseModel, ConfigDict
 
 from .lizard_raster import LizardRaster
 
-__all__ = ["RanaDataset", "RanaDatasetLizardRaster"]
+__all__ = [
+    "RanaDataset",
+    "RanaDatasetLizardRaster",
+    "DatasetLink",
+    "DatasetFile",
+    "DatasetLayer",
+]
 
 
 class ResourceIdentifier(BaseModel):
@@ -12,12 +18,27 @@ class ResourceIdentifier(BaseModel):
     link: AnyHttpUrl | None
 
 
+class DatasetLayer(BaseModel):
+    id: str
+    title: str | None = None
+
+
+class DatasetFile(BaseModel):
+    href: AnyHttpUrl
+    size: int
+    title: str | None = None
+    envelope: tuple[float, float, float, float] | None = None
+    time: AwareDatetime | None = None
+
+
 class DatasetLink(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     protocol: str
-    name: str | None = None
+    title: str | None = None
     url: AnyHttpUrl | None = None
+    layers: list[DatasetLayer] = []
+    files: list[DatasetFile] = []
 
 
 class RanaDataset(BaseModel):

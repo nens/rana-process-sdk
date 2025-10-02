@@ -4,7 +4,12 @@ from pydantic import AnyHttpUrl
 from pytest import fixture, raises
 
 from rana_process_sdk.domain import DoesNotExist, Json
-from rana_process_sdk.domain.dataset import DatasetLink, RanaDataset, ResourceIdentifier
+from rana_process_sdk.domain.dataset import (
+    DatasetLayer,
+    DatasetLink,
+    RanaDataset,
+    ResourceIdentifier,
+)
 from rana_process_sdk.infrastructure import RanaApiProvider, RanaDatasetGateway
 
 
@@ -35,10 +40,34 @@ def rana_dataset_response() -> Json:
             {
                 "protocol": "INSPIRE Atom",
                 "urlObject": {},
-                "nameObject": {},
+                "nameObject": {"default": "Download service"},
             },
         ],
     }
+
+
+@fixture
+def rana_dataset_data_links_response() -> list[Json]:
+    return [
+        {
+            "protocol": "OGC:WCS",
+            "url": "https://some/wcs?version=2.0.1",
+            "layers": [{"id": "dtm_05m", "title": "AHN (DTM 0.5m)"}],
+        },
+        {
+            "protocol": "INSPIRE Atom",
+            "title": "Download service",
+            "files": [
+                {
+                    "href": "https://some/file.tif",
+                    "size": 123456,
+                    "title": None,
+                    "envelope": [5.0, 51.0, 6.0, 52.0],
+                    "time": "2023-01-01T00:00:00Z",
+                }
+            ],
+        },
+    ]
 
 
 def test_get(gateway: RanaDatasetGateway, provider: Mock, rana_dataset_response: Json):
@@ -57,10 +86,9 @@ def test_get(gateway: RanaDatasetGateway, provider: Mock, rana_dataset_response:
         links=[
             DatasetLink(
                 protocol="OGC:WCS",
-                name="dtm_05m",
                 url=AnyHttpUrl("https://some/wcs?version=2.0.1"),
+                layers=[DatasetLayer(id="dtm_05m", title=None)],
             ),
-            DatasetLink(protocol="INSPIRE Atom", name=None, url=None),
         ],
     )
     provider.job_request.assert_called_once_with("GET", "datasets/DatasetId")
@@ -73,3 +101,42 @@ def test_get_not_found(gateway: RanaDatasetGateway, provider: Mock):
         gateway.get("DatasetId")
 
     provider.job_request.assert_called_once_with("GET", "datasets/DatasetId")
+
+
+def test_get_data_links(
+    gateway: RanaDatasetGateway, provider: Mock, rana_dataset_data_links_response: Json
+):
+    provider.job_request.return_value = rana_dataset_data_links_response
+
+    actual = gateway.get_data_links("DatasetId")
+
+    assert actual == [
+        DatasetLink(
+            protocol="OGC:WCS",
+            url=AnyHttpUrl("https://some/wcs?version=2.0.1"),
+            layers=[DatasetLayer(id="dtm_05m", title="AHN (DTM 0.5m)")],
+        ),
+        DatasetLink(
+            protocol="INSPIRE Atom",
+            title="Download service",
+            files=[
+                {
+                    "href": AnyHttpUrl("https://some/file.tif"),
+                    "size": 123456,
+                    "title": None,
+                    "envelope": (5.0, 51.0, 6.0, 52.0),
+                    "time": "2023-01-01T00:00:00+00:00",
+                }
+            ],
+        ),
+    ]
+    provider.job_request.assert_called_once_with("GET", "datasets/DatasetId/data-links")
+
+
+def test_get_data_links_not_found(gateway: RanaDatasetGateway, provider: Mock):
+    provider.job_request.return_value = None
+
+    with raises(DoesNotExist):
+        gateway.get_data_links("DatasetId")
+
+    provider.job_request.assert_called_once_with("GET", "datasets/DatasetId/data-links")

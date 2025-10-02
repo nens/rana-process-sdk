@@ -24,6 +24,9 @@ from rana_process_sdk.domain import (
     ThreediApiKey,
 )
 from rana_process_sdk.domain.dataset import (
+    DatasetFile,
+    DatasetLayer,
+    DatasetLink,
     RanaDataset,
     RanaDatasetLizardRaster,
     ResourceIdentifier,
@@ -639,7 +642,49 @@ def test_get_dataset(
     rana_context: PrefectRanaContext,
     rana_dataset_gateway: Mock,
 ):
+    rana_dataset_gateway.get.return_value = RanaDataset(
+        id="DatasetId",
+        title="Test Dataset",
+        resource_identifier=[],
+        links=[
+            DatasetLink(
+                protocol="OGC:WCS",
+                url=AnyHttpUrl("https://some/wcs?version=2.0.1"),
+                layers=[
+                    DatasetLayer(id="dtm_05m", title=None),
+                ],
+            ),
+            DatasetLink(
+                protocol="OGC:WFS",
+                url=AnyHttpUrl("https://some/wfs?version=2.0.1"),
+                layers=[
+                    DatasetLayer(id="buildings", title=None),
+                ],
+            ),
+        ],
+    )
+
+    rana_dataset_gateway.get_data_links.return_value = [
+        DatasetLink(
+            protocol="INSPIRE Atom",
+            title="Download service",
+            files=[
+                DatasetFile(
+                    href=AnyHttpUrl("https://some/file.tif"),
+                    size=123456,
+                )
+            ],
+        ),
+    ]
+
     actual = rana_context.get_dataset("DatasetId")
 
-    assert actual == rana_dataset_gateway.get.return_value
+    assert actual.id == "DatasetId"
+    assert actual.title == "Test Dataset"
+    assert len(actual.links) == 3
+    assert actual.links[0].protocol == "INSPIRE Atom"
+    assert actual.links[1].protocol == "OGC:WCS"
+    assert actual.links[2].protocol == "OGC:WFS"
+
     rana_dataset_gateway.get.assert_called_once_with("DatasetId")
+    rana_dataset_gateway.get_data_links.assert_called_once_with("DatasetId")

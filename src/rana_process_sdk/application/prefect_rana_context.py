@@ -174,7 +174,17 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
 
     def get_dataset(self, id: str) -> RanaDataset:
         """Retrieve a dataset by its id in Rana."""
-        return self._rana_dataset_gateway.get(id)
+        dataset = self._rana_dataset_gateway.get(id)
+        links = self._rana_dataset_gateway.get_data_links(id)
+        # Temporary situation; WCS and WFS are not included in the data links yet
+        # so we add them here to ensure they are always present
+        if not any(link.protocol == "OGC:WCS" for link in links):
+            if wcs_link := dataset.get_wcs_link():
+                links.append(wcs_link)
+        if not any(link.protocol == "OGC:WFS" for link in links):
+            if wfs_link := dataset.get_wfs_link():
+                links.append(wfs_link)
+        return dataset.model_copy(update={"links": links})
 
     def get_lizard_raster_dataset(self, id: str) -> RanaDatasetLizardRaster:
         dataset = self._rana_dataset_gateway.get(id)
