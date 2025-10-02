@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.6 (unreleased)
+## 0.6 (2025-10-02)
 
 
 - Extend the `get_dataset` to also include WMS and ATOM Service details.
