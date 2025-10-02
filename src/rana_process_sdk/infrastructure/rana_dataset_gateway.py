@@ -7,13 +7,11 @@ from .rana_api_provider import PrefectRanaApiProvider
 
 class RanaDatasetMapper:
     def _map_link_field(self, link: dict) -> DatasetLink:
-        is_atom_service = link["protocol"] == "INSPIRE Atom"
         name = link["nameObject"].get("default") or ""
         return DatasetLink(
             protocol=link["protocol"],
-            title=name if is_atom_service else None,
             url=link["urlObject"].get("default") or None,
-            layers=[] if is_atom_service else [DatasetLayer(id=name, title=None)],
+            layers=[DatasetLayer(id=name, title=None)],
         )
 
     def _map_link_detail_response(self, link: dict) -> DatasetLink:
@@ -31,7 +29,11 @@ class RanaDatasetMapper:
             id=external["id"],
             title=external["resourceTitleObject"]["default"],
             resource_identifier=external["resourceIdentifier"],
-            links=[self._map_link_field(x) for x in external["link"]],
+            links=[
+                self._map_link_field(x)
+                for x in external["link"]
+                if x.get("protocol") in {"OGC:WFS", "OGC:WCS"}
+            ],
         )
 
 

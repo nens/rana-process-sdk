@@ -4,7 +4,7 @@
 ## 0.6 (unreleased)
 
 
-- Nothing changed yet.
+- Extend the `get_dataset` to also include WMS and ATOM Service details.
 
 
 ## 0.5 (2025-09-24)

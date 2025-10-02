@@ -89,7 +89,6 @@ def test_get(gateway: RanaDatasetGateway, provider: Mock, rana_dataset_response:
                 url=AnyHttpUrl("https://some/wcs?version=2.0.1"),
                 layers=[DatasetLayer(id="dtm_05m", title=None)],
             ),
-            DatasetLink(protocol="INSPIRE Atom", title="Download service"),
         ],
     )
     provider.job_request.assert_called_once_with("GET", "datasets/DatasetId")
