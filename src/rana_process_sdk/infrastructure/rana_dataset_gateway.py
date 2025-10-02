@@ -1,18 +1,29 @@
 __all__ = ["RanaDatasetGateway"]
 
 
-from ..domain import DoesNotExist, Json, RanaDataset
+from ..domain import DatasetLayer, DatasetLink, DoesNotExist, Json, RanaDataset
 from .rana_api_provider import PrefectRanaApiProvider
 
 
 class RanaDatasetMapper:
-    def _map_link(self, link: dict) -> dict | None:
-        return {
-            "protocol": link["protocol"],
-            "name": link["nameObject"].get("default") or None,
-            "url": link["urlObject"].get("default") or None,
-        }
-        return None
+    def _map_link_field(self, link: dict) -> DatasetLink:
+        is_atom_service = link["protocol"] == "INSPIRE Atom"
+        name = link["nameObject"].get("default") or ""
+        return DatasetLink(
+            protocol=link["protocol"],
+            title=name if is_atom_service else None,
+            url=link["urlObject"].get("default") or None,
+            layers=[] if is_atom_service else [DatasetLayer(id=name, title=None)],
+        )
+
+    def _map_link_detail_response(self, link: dict) -> DatasetLink:
+        return DatasetLink(
+            protocol=link["protocol"],
+            title=link.get("title"),
+            url=link.get("url"),
+            layers=link.get("layers", []),
+            files=link.get("files", []),
+        )
 
     def to_internal(self, external: Json) -> RanaDataset:
         """Map external dataset representation to internal RanaDataset."""
@@ -20,12 +31,13 @@ class RanaDatasetMapper:
             id=external["id"],
             title=external["resourceTitleObject"]["default"],
             resource_identifier=external["resourceIdentifier"],
-            links=[self._map_link(x) for x in external["link"]],
+            links=[self._map_link_field(x) for x in external["link"]],
         )
 
 
 class RanaDatasetGateway:
     path = "datasets/{id}"
+    data_links_path = "datasets/{id}/data-links"
     mapper = RanaDatasetMapper()
 
     def __init__(self, provider_override: PrefectRanaApiProvider | None = None):
@@ -41,3 +53,10 @@ class RanaDatasetGateway:
         if response is None:
             raise DoesNotExist("dataset", id)
         return self.mapper.to_internal(response)
+
+    def get_data_links(self, id: str) -> list[DatasetLink]:
+        """Get dataset links by prefix."""
+        response = self.provider.job_request("GET", self.data_links_path.format(id=id))
+        if response is None:
+            raise DoesNotExist("dataset", id)
+        return [self.mapper._map_link_detail_response(x) for x in response]

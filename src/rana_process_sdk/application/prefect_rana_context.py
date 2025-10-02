@@ -8,6 +8,7 @@ from pydantic import SecretStr
 from threedi_api_client.files import download_file, upload_file
 
 from ..domain import (
+    DatasetLink,
     FileStat,
     History,
     Json,
@@ -175,6 +176,10 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
     def get_dataset(self, id: str) -> RanaDataset:
         """Retrieve a dataset by its id in Rana."""
         return self._rana_dataset_gateway.get(id)
+
+    def get_dataset_links(self, id: str) -> list[DatasetLink]:
+        """Retrieve dataset links by its id in Rana."""
+        return self._rana_dataset_gateway.get_data_links(id)
 
     def get_lizard_raster_dataset(self, id: str) -> RanaDatasetLizardRaster:
         dataset = self._rana_dataset_gateway.get(id)
