@@ -89,10 +89,11 @@ def test_set_result(create_table_artifact: Mock, runtime: PrefectRanaRuntime):
     create_table_artifact.assert_called_once_with([{"foo": "bar"}], key="results")
 
 
-
 @patch(f"{MODULE}.get_run_logger")
 @patch(f"{MODULE}.update_progress_artifact")
-def test_set_progress(update_progress_artifact: Mock, get_run_logger: Mock, runtime: PrefectRanaRuntime):
+def test_set_progress(
+    update_progress_artifact: Mock, get_run_logger: Mock, runtime: PrefectRanaRuntime
+):
     runtime._progress_artifact_id = "123ABC"
 
     runtime.set_progress(progress=100, description="Job Done!")
@@ -110,6 +111,3 @@ def test_create_progress(create_progress_artifact: Mock, runtime: PrefectRanaRun
 
     create_progress_artifact.assert_called_once_with(0.0, "progress", "Job started")
     assert runtime._progress_artifact_id == create_progress_artifact.return_value
-    
-    
-    
