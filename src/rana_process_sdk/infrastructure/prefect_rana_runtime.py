@@ -78,4 +78,5 @@ class PrefectRanaRuntime(RanaRuntime):
 
     def set_progress(self, progress: float, description: str) -> None:
         assert self._progress_artifact_id is not None
+        self.logger.info(f"{progress}%: description")
         update_progress_artifact(self._progress_artifact_id, progress, description)
