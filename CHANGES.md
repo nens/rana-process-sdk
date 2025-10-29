@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.7 (unreleased)
+## 0.7 (2025-10-29)
 
 
 - Also emit an INFO-level log when `RanaContext.set_progress` is called. This
