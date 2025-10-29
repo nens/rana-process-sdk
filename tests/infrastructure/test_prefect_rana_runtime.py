@@ -89,17 +89,38 @@ def test_set_result(create_table_artifact: Mock, runtime: PrefectRanaRuntime):
     create_table_artifact.assert_called_once_with([{"foo": "bar"}], key="results")
 
 
+@patch(f"{MODULE}.get_run_logger")
 @patch(f"{MODULE}.update_progress_artifact")
-def test_set_progress(update_progress_artifact: Mock, runtime: PrefectRanaRuntime):
+def test_set_progress(
+    update_progress_artifact: Mock, get_run_logger: Mock, runtime: PrefectRanaRuntime
+):
     runtime._progress_artifact_id = "123ABC"
+
     runtime.set_progress(progress=100, description="Job Done!")
+
+    get_run_logger.assert_called_once_with()
+    get_run_logger.return_value.info.assert_called_once_with("Job Done!")
+    update_progress_artifact.assert_called_once_with("123ABC", 100, "Job Done!")
+
+
+@patch(f"{MODULE}.get_run_logger")
+@patch(f"{MODULE}.update_progress_artifact")
+def test_set_progress_no_log(
+    update_progress_artifact: Mock, get_run_logger: Mock, runtime: PrefectRanaRuntime
+):
+    runtime._progress_artifact_id = "123ABC"
+
+    runtime.set_progress(progress=100, description="Job Done!", log=False)
+
+    get_run_logger.return_value.info.assert_not_called()
     update_progress_artifact.assert_called_once_with("123ABC", 100, "Job Done!")
 
 
 @patch(f"{MODULE}.create_progress_artifact")
 def test_create_progress(create_progress_artifact: Mock, runtime: PrefectRanaRuntime):
     create_progress_artifact.return_value = uuid4()
-    runtime.create_progress()
-    create_progress_artifact.assert_called_once_with(0.0, "progress", "Job started")
 
+    runtime.create_progress()
+
+    create_progress_artifact.assert_called_once_with(0.0, "progress", "Job started")
     assert runtime._progress_artifact_id == create_progress_artifact.return_value
