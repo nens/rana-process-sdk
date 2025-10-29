@@ -99,7 +99,20 @@ def test_set_progress(
     runtime.set_progress(progress=100, description="Job Done!")
 
     get_run_logger.assert_called_once_with()
-    get_run_logger.return_value.info.assert_called_once_with("100%: description")
+    get_run_logger.return_value.info.assert_called_once_with("Job Done!")
+    update_progress_artifact.assert_called_once_with("123ABC", 100, "Job Done!")
+
+
+@patch(f"{MODULE}.get_run_logger")
+@patch(f"{MODULE}.update_progress_artifact")
+def test_set_progress_no_log(
+    update_progress_artifact: Mock, get_run_logger: Mock, runtime: PrefectRanaRuntime
+):
+    runtime._progress_artifact_id = "123ABC"
+
+    runtime.set_progress(progress=100, description="Job Done!", log=False)
+
+    get_run_logger.return_value.info.assert_not_called()
     update_progress_artifact.assert_called_once_with("123ABC", 100, "Job Done!")
 
 

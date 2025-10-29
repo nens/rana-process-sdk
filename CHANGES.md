@@ -4,7 +4,8 @@
 ## 0.7 (unreleased)
 
 
-- Nothing changed yet.
+- Also emit an INFO-level log when `RanaContext.set_progress` is called. This
+  can be opted out from by using the parameter `log=False`.
 
 
 ## 0.6 (2025-10-02)
