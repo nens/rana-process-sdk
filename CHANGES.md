@@ -4,7 +4,7 @@
 ## 0.8 (unreleased)
 
 
-- Nothing changed yet.
+- Fix opted out parameter `log=False` in `set_progress` to be moved from runtime to context.
 
 
 ## 0.7 (2025-10-29)
