@@ -32,9 +32,9 @@ def test_working_dir(runtime: LocalTestRanaRuntime, tmp_path: Path):
 
 
 def test_set_progress(runtime: LocalTestRanaRuntime, caplog: LogCaptureFixture):
-    runtime.set_progress(0, "Start job")
-    runtime.set_progress(50, "Update progress")
-    runtime.set_progress(100, "Job Done!")
+    runtime.set_progress(0, "Start job", True)
+    runtime.set_progress(50, "Update progress", True)
+    runtime.set_progress(100, "Job Done!", True)
 
     assert " [          ]   0% | Start job" in caplog.text
     assert " [█████     ]  50% | Update progress" in caplog.text

@@ -406,7 +406,7 @@ def test_context_manager(
         (prefect_rana_runtime.job_working_dir / "directory").mkdir()
 
     prefect_rana_runtime.create_progress.assert_called_once()
-    prefect_rana_runtime.set_progress.assert_called_once_with(100, "Completed")
+    prefect_rana_runtime.set_progress.assert_called_once_with(100, "Completed", True)
     threedi_api_key_gateway.remove_assert_called_once_with()
     assert not prefect_rana_runtime.job_working_dir.exists()
 
@@ -424,7 +424,7 @@ def test_context_manager_threedi_no_api_key(
         (prefect_rana_runtime.job_working_dir / "directory").mkdir()
 
     prefect_rana_runtime.create_progress.assert_called_once()
-    prefect_rana_runtime.set_progress.assert_called_once_with(100, "Completed")
+    prefect_rana_runtime.set_progress.assert_called_once_with(100, "Completed", True)
     threedi_api_key_gateway.remove_assert_called_once_with()
     assert not prefect_rana_runtime.job_working_dir.exists()
 
@@ -510,7 +510,7 @@ def test_prefect_is_cached(PrefectRanaRuntime: Mock, rana_context: PrefectRanaCo
 def test_set_progress(rana_context: PrefectRanaContext, prefect_rana_runtime: Mock):
     rana_context.set_progress(100, "Job Done!")
 
-    prefect_rana_runtime.set_progress.assert_called_once_with(100, "Job Done!")
+    prefect_rana_runtime.set_progress.assert_called_once_with(100, "Job Done!", True)
 
 
 def test_file_output_optional_no_default_err():

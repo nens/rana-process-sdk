@@ -67,7 +67,7 @@ class RanaRuntime(ABC):
         pass
 
     @abstractmethod
-    def set_progress(self, progress: float, description: str, log: bool = True) -> None:
+    def set_progress(self, progress: float, description: str, log: bool) -> None:
         pass
 
     @abstractmethod
