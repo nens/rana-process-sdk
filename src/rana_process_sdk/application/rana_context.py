@@ -221,8 +221,8 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
     def logger(self) -> logging.Logger:
         return self._rana_runtime.logger
 
-    def set_progress(self, progress: int, description: str) -> None:
-        self._rana_runtime.set_progress(progress, description)
+    def set_progress(self, progress: int, description: str, log: bool = True) -> None:
+        self._rana_runtime.set_progress(progress, description, log)
 
     @cached_property
     def _rana_runtime(self) -> RanaRuntime:

@@ -95,7 +95,7 @@ class LocalTestRanaContext(RanaContext[T], Generic[T]):
     ) -> None:
         if self._rana_runtime._cleanup_working_dir and self.job_working_dir.is_dir():
             shutil.rmtree(self.job_working_dir)
-        self._rana_runtime.set_progress(100, "Completed")
+        self._rana_runtime.set_progress(100, "Completed", True)
 
     @property
     def _rana_schematisation_gateway(self) -> RanaSchematisationGateway:

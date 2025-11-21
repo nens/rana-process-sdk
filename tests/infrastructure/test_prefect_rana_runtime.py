@@ -96,7 +96,7 @@ def test_set_progress(
 ):
     runtime._progress_artifact_id = "123ABC"
 
-    runtime.set_progress(progress=100, description="Job Done!")
+    runtime.set_progress(progress=100, description="Job Done!", log=True)
 
     get_run_logger.assert_called_once_with()
     get_run_logger.return_value.info.assert_called_once_with("Job Done!")

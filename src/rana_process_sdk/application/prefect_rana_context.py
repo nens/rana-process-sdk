@@ -143,7 +143,7 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
             shutil.rmtree(self.job_working_dir)
         if key := self._rana_runtime.threedi_api_key:
             self.threedi_remove_api_key(key)
-        self._rana_runtime.set_progress(100, "Completed")
+        self._rana_runtime.set_progress(100, "Completed", True)
 
     def setup_logger(self) -> None:
         try:
