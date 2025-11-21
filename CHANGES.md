@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.8 (unreleased)
+## 0.8 (2025-11-21)
 
 
 - Fix opted out parameter `log=False` in `set_progress` to be moved from runtime to context.
