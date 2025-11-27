@@ -11,5 +11,5 @@ from .presentation import *
 from .settings import get_local_test_settings
 
 # fmt: off
-__version__ = "0.9"
+__version__ = "0.10.dev0"
 # fmt: on
