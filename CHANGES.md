@@ -4,7 +4,7 @@
 ## 0.9 (unreleased)
 
 
-- Nothing changed yet.
+- Actually the threedi API host setting.
 
 
 ## 0.8 (2025-11-21)
