@@ -649,7 +649,7 @@ def test_log_exception_process_user_error(
 
 
 def test_log_exception_process_internal_error(
-    base_rana_context: RanaContext, rana_runtme: Mock
+    base_rana_context: RanaContext, rana_runtime: Mock
 ):
     exception = ValueError("Test exception")
 
