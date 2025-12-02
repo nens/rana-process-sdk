@@ -76,15 +76,16 @@ def rana_flow(
                     raise exception
 
         description_override = description
-        description_path = (
-            Path(func.__globals__["__file__"]).parent / DESCRIPTION_FILENAME
-        )
-        if not description and description_path.exists():
-            with (
-                contextlib.suppress(OSError),
-                open(description_path) as description_file,
-            ):
-                description_override = description_file.read()
+        if "__file__" in func.__globals__:
+            description_path = (
+                Path(func.__globals__["__file__"]).parent / DESCRIPTION_FILENAME
+            )
+            if not description and description_path.exists():
+                with (
+                    contextlib.suppress(OSError),
+                    open(description_path) as description_file,
+                ):
+                    description_override = description_file.read()
 
         return flow(
             persist_result=False,
