@@ -217,3 +217,26 @@ def test_rana_flow_description_file_without_param(flow_module_with_descripion_fi
         flow_module_with_descripion_file.flow_without_description.description
         == "# Example Process Description"
     )
+
+
+def test_rana_flow_description_file_not_read_without_file_in_globals():
+    """Test that description file is not read when __file__ is not in globals."""
+    # Use current globals but remove __file__ to simulate the scenario
+    globals_without_file = globals().copy()
+    globals_without_file.pop("__file__", None)
+
+    local_namespace = {}
+
+    exec(
+        """
+@rana_flow()
+def flow_no_file_global(context: PrefectRanaContext[Output], inputs: Inputs) -> None:
+    return None
+result = flow_no_file_global
+""",
+        globals_without_file,
+        local_namespace,
+    )
+
+    result_flow = local_namespace["result"]
+    assert result_flow.description is None
