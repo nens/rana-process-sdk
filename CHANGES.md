@@ -1,10 +1,16 @@
 # Changelog of rana-process-sdk
 
 
-## 0.9 (unreleased)
+## 0.10 (unreleased)
 
 
 - Nothing changed yet.
+
+
+## 0.9 (2025-11-27)
+
+
+- Actually the threedi API host setting.
 
 
 ## 0.8 (2025-11-21)

@@ -26,6 +26,7 @@ from ..infrastructure import (
     is_optional,
     unpack_optional,
 )
+from ..settings import get_settings
 from .types import RanaPath, ThreediSchematisation, path_picker_from_json_prop
 from .widgets import DirectoryPickerWidget, PathPickerWidget
 
@@ -338,7 +339,7 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
     def threedi_api(self) -> ThreediApi:
         return ThreediApi(
             config={
-                "THREEDI_API_HOST": "https://api.3di.live",
+                "THREEDI_API_HOST": get_settings().threedi.host,
                 "THREEDI_API_PERSONAL_API_TOKEN": self.threedi_api_key().key.get_secret_value(),
             }
         )
