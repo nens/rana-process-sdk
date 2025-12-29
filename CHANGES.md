@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.10 (unreleased)
+## 0.10 (2025-12-29)
 
 
 - Small fix with reading process description
