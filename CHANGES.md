@@ -4,7 +4,7 @@
 ## 0.10 (unreleased)
 
 
-- Nothing changed yet.
+- Small fix with reading process description
 
 
 ## 0.9 (2025-11-27)
