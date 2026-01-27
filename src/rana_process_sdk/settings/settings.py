@@ -21,12 +21,24 @@ class ThreediSettings(BaseModel):
     host: str  # AnyHttpUrl adds a trailing "/"
 
 
+class DTMInterpolateSettings(BaseModel):
+    max_memory: int = 1024**3  # 1 GB
+    trace_memory_usage: bool = False
+
+
+class ProcessSettings(BaseModel):
+    # Indidual process settings go here
+    # Group them in one BaseModel per process
+    dtm_interpolate: DTMInterpolateSettings
+
+
 class Settings(BaseSettings):
     environment: str
     sentry_url: AnyUrl | None = None
     rana_api_url: AnyHttpUrl
     lizard: LizardSettings
     threedi: ThreediSettings
+    process: ProcessSettings
 
     @classmethod
     def settings_customise_sources(
