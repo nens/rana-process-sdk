@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.11 (unreleased)
+## 0.11 (2026-01-27)
 
 
 - Support DTM interpolate process settings.
