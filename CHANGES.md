@@ -4,7 +4,7 @@
 ## 0.11 (unreleased)
 
 
-- Nothing changed yet.
+- Support DTM interpolate process settings.
 
 
 ## 0.10 (2025-12-29)
