@@ -4,7 +4,7 @@
 ## 0.12 (unreleased)
 
 
-- Nothing changed yet.
+- Use `default_factory` for DTM interpolate process settings.
 
 
 ## 0.11 (2026-01-27)
