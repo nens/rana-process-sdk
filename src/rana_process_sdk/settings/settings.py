@@ -1,7 +1,7 @@
 from functools import lru_cache
 from os import environ
 
-from pydantic import AnyHttpUrl, AnyUrl, BaseModel, SecretStr, Field
+from pydantic import AnyHttpUrl, AnyUrl, BaseModel, Field, SecretStr
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -29,7 +29,9 @@ class DTMInterpolateSettings(BaseModel):
 class ProcessSettings(BaseModel):
     # Indidual process settings go here
     # Group them in one BaseModel per process
-    dtm_interpolate: DTMInterpolateSettings = Field(default_factory=DTMInterpolateSettings)
+    dtm_interpolate: DTMInterpolateSettings = Field(
+        default_factory=DTMInterpolateSettings
+    )
 
 
 class Settings(BaseSettings):
