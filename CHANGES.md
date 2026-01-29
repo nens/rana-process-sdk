@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.12 (unreleased)
+## 0.12 (2026-01-29)
 
 
 - Use `default_factory` for DTM interpolate process settings.
