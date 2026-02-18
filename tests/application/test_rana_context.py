@@ -699,36 +699,18 @@ def test_get_threedi_api(
     )
 
 
-def test_get_progress_initial_value(base_rana_context: RanaContext):
-    assert base_rana_context.get_progress() == 0
+def test_get_progress_delegates_to_runtime(
+    base_rana_context: RanaContext, rana_runtime: Mock
+):
+    rana_runtime.get_progress.return_value = 42
+
+    assert base_rana_context.get_progress() == 42
+    rana_runtime.get_progress.assert_called_once_with()
 
 
-def test_set_progress_updates_internal_state(
+def test_set_progress_delegates_to_runtime(
     base_rana_context: RanaContext, rana_runtime: Mock
 ):
     base_rana_context.set_progress(50, "Halfway there")
 
-    assert base_rana_context.get_progress() == 50
     rana_runtime.set_progress.assert_called_once_with(50, "Halfway there", True)
-
-
-def test_set_progress_multiple_calls(
-    base_rana_context: RanaContext, rana_runtime: Mock
-):
-    base_rana_context.set_progress(25, "Quarter done")
-    assert base_rana_context.get_progress() == 25
-
-    base_rana_context.set_progress(50, "Halfway there")
-    assert base_rana_context.get_progress() == 50
-
-    base_rana_context.set_progress(100, "Complete")
-    assert base_rana_context.get_progress() == 100
-
-    assert rana_runtime.set_progress.call_count == 3
-    rana_runtime.set_progress.assert_has_calls(
-        [
-            call(25, "Quarter done", True),
-            call(50, "Halfway there", True),
-            call(100, "Complete", True),
-        ]
-    )
