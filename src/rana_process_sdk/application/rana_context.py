@@ -4,7 +4,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Generic, TypeVar, cast, get_args
 from uuid import UUID
 
-from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    PrivateAttr,
+    SecretStr,
+    field_validator,
+    model_validator,
+)
 from threedi_api_client import ThreediApi
 
 from ..domain import (
@@ -79,6 +86,7 @@ def expected_files(path_picker: PathPickerWidget) -> dict[str, FileOutput]:
 class RanaContext(BaseModel, Generic[T], validate_assignment=True):
     output: T | None = None  # for the JSONSchema and for after-process validation
     output_paths: dict[str, str] = {}  # maps output field name -> path in project
+    _current_progress: int = PrivateAttr(default=0)  # Track the current progress
 
     def to_prefect_context(self) -> "PrefectRanaContext[T]":
         from rana_process_sdk import PrefectRanaContext
@@ -223,7 +231,12 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
         return self._rana_runtime.logger
 
     def set_progress(self, progress: int, description: str, log: bool = True) -> None:
+        self._current_progress = progress
         self._rana_runtime.set_progress(progress, description, log)
+
+    def get_progress(self) -> int:
+        """Get the current progress value (0-100)."""
+        return self._current_progress
 
     @cached_property
     def _rana_runtime(self) -> RanaRuntime:
