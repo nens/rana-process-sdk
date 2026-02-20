@@ -77,7 +77,3 @@ class RanaRuntime(ABC):
     @abstractmethod
     def set_result(self, result: Json) -> None:
         pass
-
-    @abstractmethod
-    def get_job_name(self) -> str:
-        pass

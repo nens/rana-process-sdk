@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from pydantic import SecretStr
 
@@ -105,6 +105,3 @@ class LocalTestRanaRuntime(RanaRuntime):
         self.logger.info(
             "---------------   | -------------------------------------------------"
         )
-
-    def get_job_name(self) -> str:
-        return f"Local test job #{str(uuid4())[:8]}"

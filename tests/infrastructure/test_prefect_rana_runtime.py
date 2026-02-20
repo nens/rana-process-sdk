@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 from uuid import UUID, uuid4
 
 from prefect.client.schemas import FlowRun
-from prefect.context import EngineContext, FlowRunContext, SettingsContext
+from prefect.context import EngineContext, SettingsContext
 from prefect.settings import Settings
 from pytest import fixture
 
@@ -124,13 +124,3 @@ def test_create_progress(create_progress_artifact: Mock, runtime: PrefectRanaRun
 
     create_progress_artifact.assert_called_once_with(0.0, "progress", "Job started")
     assert runtime._progress_artifact_id == create_progress_artifact.return_value
-
-
-@patch(f"{MODULE}.get_run_context")
-def test_get_job_name(get_run_contex: Mock, runtime: PrefectRanaRuntime):
-    flow_run_context = Mock(FlowRunContext, flow_run=Mock())
-    get_run_contex.return_value = flow_run_context
-
-    job_name = runtime.get_job_name()
-
-    assert job_name == flow_run_context.flow_run.name
