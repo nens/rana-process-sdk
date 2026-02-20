@@ -697,3 +697,11 @@ def test_get_threedi_api(
             "THREEDI_API_PERSONAL_API_TOKEN": "supersecret",
         }
     )
+
+
+def test_get_job_name_delegates_to_runtime(
+    base_rana_context: RanaContext, rana_runtime: Mock
+):
+    base_rana_context.get_job_name()
+
+    rana_runtime.get_job_name.assert_called_once_with()
