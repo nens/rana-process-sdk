@@ -697,3 +697,20 @@ def test_get_threedi_api(
             "THREEDI_API_PERSONAL_API_TOKEN": "supersecret",
         }
     )
+
+
+def test_get_progress_delegates_to_runtime(
+    base_rana_context: RanaContext, rana_runtime: Mock
+):
+    rana_runtime.get_progress.return_value = 42
+
+    assert base_rana_context.get_progress() == 42
+    rana_runtime.get_progress.assert_called_once_with()
+
+
+def test_set_progress_delegates_to_runtime(
+    base_rana_context: RanaContext, rana_runtime: Mock
+):
+    base_rana_context.set_progress(50, "Halfway there")
+
+    rana_runtime.set_progress.assert_called_once_with(50, "Halfway there", True)
