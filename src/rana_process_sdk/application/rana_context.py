@@ -232,6 +232,9 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
     def get_progress(self) -> int:
         return self._rana_runtime.get_progress()
 
+    def get_job_name(self) -> str:
+        return self._rana_runtime.get_job_name()
+
     @cached_property
     def _rana_runtime(self) -> RanaRuntime:
         raise NotImplementedError("RanaRuntime must be implemented in a subclass")
