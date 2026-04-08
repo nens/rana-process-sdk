@@ -32,7 +32,7 @@ class RanaDatasetMapper:
             links=[
                 self._map_link_field(x)
                 for x in external["link"]
-                if x.get("protocol") in {"OGC:WFS", "OGC:WCS"}
+                if x.get("protocol") in {"OGC:WFS", "OGC:WCS", "OGC:API features"}
             ],
         )
 

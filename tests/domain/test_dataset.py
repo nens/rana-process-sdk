@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from pydantic import AnyHttpUrl
 from pytest import fixture, mark
 
@@ -42,19 +44,29 @@ def test_get_id_for_namespace(
     assert dataset.get_id_for_namespace(namespace) == expected_id
 
 
-def test_get_wcs_link(dataset: RanaDataset) -> None:
-    assert dataset.get_wcs_link() == dataset.links[0]
+def test_get_link_by_protocol(dataset: RanaDataset) -> None:
+    assert dataset._get_link_by_protocol("OGC:WCS") == dataset.links[0]
 
 
-def test_get_wfs_link(dataset: RanaDataset) -> None:
-    assert dataset.get_wfs_link() == dataset.links[1]
+def test_get_link_by_protocol_missing(dataset: RanaDataset) -> None:
+    assert dataset._get_link_by_protocol("OGC:API features") is None
 
 
-def test_get_wcs_link_no_links(dataset: RanaDataset) -> None:
-    del dataset.links[0]
-    assert dataset.get_wcs_link() is None
+@patch.object(RanaDataset, "_get_link_by_protocol")
+def test_get_wcs_link(mock_get_link_by_protocol, dataset: RanaDataset) -> None:
+    assert dataset.get_wcs_link() is mock_get_link_by_protocol.return_value
+    mock_get_link_by_protocol.assert_called_once_with("OGC:WCS")
 
 
-def test_get_wfs_link_no_links(dataset: RanaDataset) -> None:
-    del dataset.links[1]
-    assert dataset.get_wfs_link() is None
+@patch.object(RanaDataset, "_get_link_by_protocol")
+def test_get_wfs_link(mock_get_link_by_protocol, dataset: RanaDataset) -> None:
+    assert dataset.get_wfs_link() is mock_get_link_by_protocol.return_value
+    mock_get_link_by_protocol.assert_called_once_with("OGC:WFS")
+
+
+@patch.object(RanaDataset, "_get_link_by_protocol")
+def test_get_ogc_api_features_link(
+    mock_get_link_by_protocol, dataset: RanaDataset
+) -> None:
+    assert dataset.get_ogc_api_features_link() is mock_get_link_by_protocol.return_value
+    mock_get_link_by_protocol.assert_called_once_with("OGC:API features")

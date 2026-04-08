@@ -4,7 +4,7 @@
 ## 0.13 (unreleased)
 
 
-- Nothing changed yet.
+- Added Dataset.get_ogc_api_features_link.
 
 
 ## 0.12 (2026-01-29)
