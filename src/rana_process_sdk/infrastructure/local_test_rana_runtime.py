@@ -89,9 +89,11 @@ class LocalTestRanaRuntime(RanaRuntime):
         logger.propagate = True
         return logger
 
-    def set_progress(self, progress: float, description: str, log: bool) -> None:
-        progress_bar = "█" * int(progress // 10) + " " * (10 - int(progress // 10))
-        self.logger.info(f"[{progress_bar}] {progress:3.0f}% | {description}")
+    def set_progress(self, progress: int, description: str, log: bool) -> None:
+        if log:
+            progress_bar = "█" * int(progress // 10) + " " * (10 - int(progress // 10))
+            self.logger.info(f"[{progress_bar}] {progress:3.0f}% | {description}")
+        super().set_progress(progress, description, log)
 
     def set_result(self, result: Json) -> None:
         self.logger.info("result            | value")

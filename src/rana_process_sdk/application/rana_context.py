@@ -77,6 +77,10 @@ def expected_files(path_picker: PathPickerWidget) -> dict[str, FileOutput]:
 
 
 class RanaContext(BaseModel, Generic[T], validate_assignment=True):
+    """
+    This model is used to generate the input and output JSONSchemas of the process. Therefore be careful when changing the fields of this model, as it may break the compatibility with existing processes.
+    """
+
     output: T | None = None  # for the JSONSchema and for after-process validation
     output_paths: dict[str, str] = {}  # maps output field name -> path in project
 
@@ -224,6 +228,9 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
 
     def set_progress(self, progress: int, description: str, log: bool = True) -> None:
         self._rana_runtime.set_progress(progress, description, log)
+
+    def get_progress(self) -> int:
+        return self._rana_runtime.get_progress()
 
     @cached_property
     def _rana_runtime(self) -> RanaRuntime:
