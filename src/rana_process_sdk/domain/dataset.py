@@ -58,19 +58,21 @@ class RanaDataset(BaseModel):
                 return identifier.code
         return None
 
-    def get_wcs_link(self) -> DatasetLink | None:
-        """Returns the WCS link if available, otherwise None."""
+    def _get_link_by_protocol(self, protocol: str) -> DatasetLink | None:
+        """Returns the link with given protocol if available, otherwise None."""
         for link in self.links:
-            if link.protocol == "OGC:WCS":
+            if link.protocol == protocol:
                 return link
         return None
 
+    def get_wcs_link(self) -> DatasetLink | None:
+        return self._get_link_by_protocol("OGC:WCS")
+
     def get_wfs_link(self) -> DatasetLink | None:
-        """Returns the WFS link if available, otherwise None."""
-        for link in self.links:
-            if link.protocol == "OGC:WFS":
-                return link
-        return None
+        return self._get_link_by_protocol("OGC:WFS")
+
+    def get_ogc_api_features_link(self) -> DatasetLink | None:
+        return self._get_link_by_protocol("OGC:API features")
 
 
 class RanaDatasetLizardRaster(RanaDataset):
