@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.13 (unreleased)
+## 0.13 (2026-04-08)
 
 
 - Added Dataset.get_ogc_api_features_link.
