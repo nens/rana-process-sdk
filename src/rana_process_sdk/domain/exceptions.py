@@ -55,7 +55,12 @@ class ProcessInternalError(Exception):
             title=f"Process execution encountered an exception: {self.__class__.__name__}({self.exception.__class__.__name__}): {self.exception}",
             traceback=traceback.format_exc(),
             error_type="internal",
-            description="During process execution an internal exception occured. This should have not have happened and our support has been notified. When you want to reference this problem, please provide the ID of this job, or the project ID.",
+            description=(
+                "Something went wrong during the execution of this process. Our team is **not** automatically notified of this error, so please let us know if you need assistance.\n\n"
+                "When contacting support, please include:\n\n"
+                "Job ID: {jobId}\n"
+                "Project ID: {projectId}"
+            ),
         )
 
 

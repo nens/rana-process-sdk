@@ -556,7 +556,7 @@ def test_log_exception_process_internal_error(
     rana_context.log_exception(exception)
 
     prefect_rana_runtime.logger.error.assert_called_once_with(
-        '{"title":"Process execution encountered an exception: ProcessInternalError(ValueError): Test exception","traceback":"NoneType: None\\n","error_type":"internal","description":"During process execution an internal exception occured. This should have not have happened and our support has been notified. When you want to reference this problem, please provide the ID of this job, or the project ID."}'
+        '{"title":"Process execution encountered an exception: ProcessInternalError(ValueError): Test exception","traceback":"NoneType: None\\n","error_type":"internal","description":"Something went wrong during the execution of this process. Our team is **not** automatically notified of this error, so please let us know if you need assistance.\\n\\nWhen contacting support, please include:\\n\\nJob ID: {jobId}\\nProject ID: {projectId}"}'
     )
 
 
