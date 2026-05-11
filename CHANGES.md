@@ -4,7 +4,7 @@
 ## 0.14 (unreleased)
 
 
-- Nothing changed yet.
+- Update default process exception
 
 
 ## 0.13 (2026-04-08)
