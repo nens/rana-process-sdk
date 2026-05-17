@@ -76,8 +76,9 @@ class PrefectRanaRuntime(RanaRuntime):
         assert isinstance(progress_artifect_id, UUID)
         self._progress_artifact_id = progress_artifect_id
 
-    def set_progress(self, progress: float, description: str, log: bool) -> None:
+    def set_progress(self, progress: int, description: str, log: bool) -> None:
         if log:
             self.logger.info(description)
         assert self._progress_artifact_id is not None
         update_progress_artifact(self._progress_artifact_id, progress, description)
+        super().set_progress(progress, description, log)
