@@ -6,6 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 from threedi_api_client import ThreediApi
+from urllib3.util.retry import Retry
 
 from ..domain import (
     FileStat,
@@ -336,12 +337,13 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
             self._rana_runtime.threedi_api_key = self._threedi_api_key_add()
         return self._rana_runtime.threedi_api_key
 
-    def threedi_api(self) -> ThreediApi:
+    def threedi_api(self, retries: int | Retry = 3) -> ThreediApi:
         return ThreediApi(
             config={
                 "THREEDI_API_HOST": get_settings().threedi.host,
                 "THREEDI_API_PERSONAL_API_TOKEN": self.threedi_api_key().key.get_secret_value(),
-            }
+            },
+            retries=retries,
         )
 
     def setup_logger(self) -> None:
