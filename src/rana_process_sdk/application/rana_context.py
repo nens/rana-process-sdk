@@ -7,6 +7,8 @@ from uuid import UUID
 from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 from threedi_api_client import ThreediApi
 
+from rana_process_sdk.infrastructure.threedi_api_provider import get_threedi_api
+
 from ..domain import (
     FileStat,
     Json,
@@ -23,7 +25,6 @@ from ..infrastructure import (
     RanaDatasetGateway,
     RanaRuntime,
     RanaSchematisationGateway,
-    get_threedi_api,
     is_optional,
     unpack_optional,
 )
