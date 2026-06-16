@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.15 (unreleased)
+## 0.15 (2026-06-16)
 
 
 - Optionally change the retry policy of the HCC (threedi) API client.
