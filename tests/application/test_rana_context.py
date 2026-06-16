@@ -695,5 +695,6 @@ def test_get_threedi_api(
         config={
             "THREEDI_API_HOST": "https://custom-3di-host",
             "THREEDI_API_PERSONAL_API_TOKEN": "supersecret",
-        }
+        },
+        retries=3,
     )

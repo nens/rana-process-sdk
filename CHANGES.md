@@ -4,7 +4,7 @@
 ## 0.15 (unreleased)
 
 
-- Nothing changed yet.
+- Optionally change the retry policy of the HCC (threedi) API client.
 
 
 ## 0.14 (2026-05-11)
