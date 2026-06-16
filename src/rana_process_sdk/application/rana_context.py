@@ -7,8 +7,6 @@ from uuid import UUID
 from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 from threedi_api_client import ThreediApi
 
-from rana_process_sdk.infrastructure.threedi_api_provider import get_threedi_api
-
 from ..domain import (
     FileStat,
     Json,
@@ -339,8 +337,11 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
         return self._rana_runtime.threedi_api_key
 
     def threedi_api(self) -> ThreediApi:
-        return get_threedi_api(
-            host=get_settings().threedi.host, api_key=self.threedi_api_key().key
+        return ThreediApi(
+            config={
+                "THREEDI_API_HOST": get_settings().threedi.host,
+                "THREEDI_API_PERSONAL_API_TOKEN": self.threedi_api_key().key.get_secret_value(),
+            }
         )
 
     def setup_logger(self) -> None:
