@@ -678,22 +678,20 @@ def test_get_lizard_raster(
         prefix="a", key=SecretStr("supersecret"), organisations=[]
     ),
 )
-@patch(f"{MODULE}.ThreediApi")
+@patch(f"{MODULE}.get_threedi_api")
 def test_get_threedi_api(
-    threedi_api: Mock,
+    get_threedi_api_mock: Mock,
     threedi_api_key: Mock,
     get_settings: Mock,
     base_rana_context: RanaContext,
 ):
     get_settings.return_value.threedi.host = "https://custom-3di-host"
 
-    assert base_rana_context.threedi_api() is threedi_api.return_value
+    assert base_rana_context.threedi_api() is get_threedi_api_mock.return_value
 
     get_settings.assert_called_once_with()
     threedi_api_key.assert_called_once_with()
-    threedi_api.assert_called_once_with(
-        config={
-            "THREEDI_API_HOST": "https://custom-3di-host",
-            "THREEDI_API_PERSONAL_API_TOKEN": "supersecret",
-        }
+    get_threedi_api_mock.assert_called_once_with(
+        host="https://custom-3di-host",
+        api_key=SecretStr("supersecret"),
     )
