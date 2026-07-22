@@ -29,6 +29,7 @@ from ..infrastructure import (
 )
 from ..settings import get_settings
 from .types import RanaPath, path_picker_from_json_prop
+from .upload_schematisation import upload_schematisation
 from .widgets import DirectoryPickerWidget, PathPickerWidget
 
 if TYPE_CHECKING:
@@ -132,6 +133,7 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
         *,
         data_type_override: dict[str, str] = {},
         meta_override: dict[str, Json] = {},
+        commit_message: dict[str, str] = {},
     ) -> None:
         self.output = cast(T, output)
         assert self.output is not None
@@ -147,7 +149,9 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
                 else:
                     if path_details.data_type == "threedi_schematisation":
                         rana_path = self.upload_schematisation(
-                            output_value, self.output_paths[key]
+                            output_value,
+                            self.output_paths[key],
+                            commit_message=commit_message.get(key),
                         )
                     else:
                         rana_path = self.upload(
@@ -278,12 +282,17 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
     ) -> RanaPath:
         raise NotImplementedError("Upload method must be implemented in a subclass")
 
-    def upload_schematisation(self, schematisation_id: str, rana_path: str) -> RanaPath:
+    def upload_schematisation(
+        self, files: dict[str, Path], rana_path: str, commit_message: str | None = None
+    ) -> RanaPath:
         self.logger.info(f"Writing schematisation to '{rana_path}'...")
-        file_upload = self._rana_schematisation_gateway.upload(
-            rana_path, schematisation_id
+        file_upload, schematisation_id = self._rana_schematisation_gateway.create(
+            rana_path
         )
-        return RanaPath(id=rana_path, ref=file_upload.ref)
+        upload_schematisation(
+            self.threedi_api(), schematisation_id, files, commit_message=commit_message
+        )
+        return RanaPath(id=file_upload.id, ref=file_upload.ref)
 
     def upload_dir(
         self,
