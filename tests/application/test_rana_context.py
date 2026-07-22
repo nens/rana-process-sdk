@@ -309,19 +309,20 @@ def test_base_rana_context_set_output_with_file_ignored(
 @patch.object(
     RanaContext,
     "upload_schematisation",
-    return_value=RanaPath(id="a/foo.txt", ref="abc123"),
+    return_value=RanaPath(id="a/Foo", ref="abc123"),
 )
 def test_base_rana_context_set_output_with_schematisation(
     upload_schematisation: Mock,
     schematisation_base_rana_context: RanaContext[SchematisationOutput],
     rana_runtime: Mock,
 ):
-    files = {"sqlite": Path("local.sqlite")}
     schematisation_base_rana_context.set_output(
-        {"x": files}, commit_message={"x": "Bar"}
+        {"x": "some/dir"}, commit_message={"x": "Bar"}
     )
 
-    upload_schematisation.assert_called_once_with(files, "a/Foo", commit_message="Bar")
+    upload_schematisation.assert_called_once_with(
+        Path("some/dir"), "a/Foo", commit_message="Bar"
+    )
     # the result contains the rana path (not the local one)
     rana_runtime.set_result.assert_called_once_with(
         {"x": {"variable_type": "rana_path", "id": "a/Foo", "ref": "abc123"}}
@@ -478,11 +479,11 @@ def test_upload_schematisation(
 ):
     rana_path = "a/foo"
     file = File(**{"id": rana_path, "last_modified": "2021-01-01T00:00:00Z"})
-    files = Mock()
+    local_path = Path("some/dir")
     rana_schematisation_gateway.create.return_value = (file, 123)
 
     actual = schematisation_rana_context.upload_schematisation(
-        files, rana_path, commit_message="Foo"
+        local_path, rana_path, commit_message="Foo"
     )
 
     assert actual == RanaPath(id=rana_path, ref="main")
@@ -493,7 +494,7 @@ def test_upload_schematisation(
     upload_schematisation.assert_called_once_with(
         threedi_api.return_value,
         123,
-        files,
+        local_path,
         commit_message="Foo",
     )
 

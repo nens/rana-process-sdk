@@ -149,7 +149,7 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
                 else:
                     if path_details.data_type == "threedi_schematisation":
                         rana_path = self.upload_schematisation(
-                            output_value,
+                            Path(output_value),
                             self.output_paths[key],
                             commit_message=commit_message.get(key),
                         )
@@ -283,14 +283,17 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
         raise NotImplementedError("Upload method must be implemented in a subclass")
 
     def upload_schematisation(
-        self, files: dict[str, Path], rana_path: str, commit_message: str | None = None
+        self, local_dir: Path, rana_path: str, commit_message: str | None = None
     ) -> RanaPath:
         self.logger.info(f"Writing schematisation to '{rana_path}'...")
         file_upload, schematisation_id = self._rana_schematisation_gateway.create(
             rana_path
         )
         upload_schematisation(
-            self.threedi_api(), schematisation_id, files, commit_message=commit_message
+            self.threedi_api(),
+            schematisation_id,
+            local_dir,
+            commit_message=commit_message,
         )
         return RanaPath(id=file_upload.id, ref=file_upload.ref)
 

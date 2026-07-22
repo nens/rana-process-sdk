@@ -121,9 +121,17 @@ def commit_revision(
 def upload_schematisation(
     threedi_api: ThreediApi,
     schematisation_id: int,
-    files: dict[str, Path],
+    local_dir: Path,
     commit_message: str | None = None,
 ) -> None:
+    # Find the first path in the root with .gpkg, that is the sqlite file
+    sqlite_path = next(
+        (local_dir / f for f in local_dir.iterdir() if f.suffix.lower() == ".gpkg"),
+        None,
+    )
+    if sqlite_path is None:
+        raise RuntimeError("The geopackages failed to generate")
+
     # Nieuwe (lege) revisie aanmaken
     revision: Revision = threedi_api.schematisations_revisions_create(
         schematisation_id, data={"empty": True}, _request_timeout=API_CLIENT_TIMEOUT
@@ -136,12 +144,19 @@ def upload_schematisation(
         threedi_api=threedi_api,
         schematisation_id=schematisation_id,
         revision_id=revision_id,
-        sqlite_path=files["sqlite"],
+        sqlite_path=sqlite_path,
     )
 
     # # Rasters
-    for raster_type, raster_path in files.items():
-        if raster_type == "sqlite":
+    rasters = {
+        "dem.tif": "dem_file",
+        "infiltration.tif": "infiltration_rate_file",
+        "friction.tif": "frict_coef_file",
+    }
+
+    for raster_file, raster_type in rasters.items():
+        raster_path = local_dir / raster_file
+        if not raster_path.exists():
             continue
         upload_raster(
             threedi_api=threedi_api,
