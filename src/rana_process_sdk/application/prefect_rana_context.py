@@ -29,7 +29,7 @@ from ..infrastructure import (
     ThreediApiKeyGateway,
 )
 from .rana_context import RanaContext, transfer_extension
-from .types import RanaPath, ThreediSchematisation
+from .types import RanaPath
 
 __all__ = ["PrefectRanaContext"]
 
@@ -153,24 +153,6 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
         else:
             sentry_block.init()
             sentry_block.set_tags_and_context(self._rana_runtime._flow_run)
-
-    def schematisation_id(self, schematisation: ThreediSchematisation) -> int:
-        file_stat = self.get_file_stat(schematisation)
-        # TODO: Descriptor will be removed from file_stat in the future: see #1685
-        if file_stat.descriptor is None:
-            raise RuntimeError(
-                f"Could not retrieve descriptor information for file: `{schematisation.id}` from the API"
-            )
-        if file_stat.descriptor.get("data_type", "") != "threedi_schematisation":
-            raise ProcessUserError(
-                "Schematisation input file does not have correct data type",
-                f"The descriptor.data_type for file `{schematisation.id}`is not `threedi_schematisation`",
-            )
-        if schematisation_id := file_stat.descriptor.get("meta", {}).get("id", None):
-            return int(schematisation_id)
-        raise RuntimeError(
-            "Schematisation does not exit, Could not retrieve the 3Di schematisation id for file: `{schematisation.id}`",
-        )
 
     def get_dataset(self, id: str) -> RanaDataset:
         """Retrieve a dataset by its id in Rana."""

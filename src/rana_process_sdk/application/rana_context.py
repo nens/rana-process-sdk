@@ -28,7 +28,7 @@ from ..infrastructure import (
     unpack_optional,
 )
 from ..settings import get_settings
-from .types import RanaPath, ThreediSchematisation, path_picker_from_json_prop
+from .types import RanaPath, path_picker_from_json_prop
 from .widgets import DirectoryPickerWidget, PathPickerWidget
 
 if TYPE_CHECKING:
@@ -349,9 +349,4 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
     def setup_logger(self) -> None:
         raise NotImplementedError(
             "setup_logger method must be implemented in a subclass"
-        )
-
-    def schematisation_id(self, schematisation: ThreediSchematisation) -> int:
-        raise NotImplementedError(
-            "schematisation_id method must be implemented in a subclass"
         )

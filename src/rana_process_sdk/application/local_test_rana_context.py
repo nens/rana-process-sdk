@@ -24,7 +24,7 @@ from ..infrastructure import (
     RanaSchematisationGateway,
 )
 from .rana_context import RanaContext, transfer_extension
-from .types import RanaPath, ThreediSchematisation
+from .types import RanaPath
 
 __all__ = ["LocalTestRanaContext"]
 
@@ -137,9 +137,3 @@ class LocalTestRanaContext(RanaContext[T], Generic[T]):
 
     def setup_logger(self) -> None:
         pass  # no Sentry for local test context
-
-    def schematisation_id(self, schematisation: ThreediSchematisation) -> int:
-        with open(
-            self._rana_runtime.project_dir / schematisation.id
-        ) as schematisation_file:
-            return int(schematisation_file.read().strip())
