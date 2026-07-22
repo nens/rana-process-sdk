@@ -285,6 +285,10 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
     def upload_schematisation(
         self, local_dir: Path, rana_path: str, commit_message: str | None = None
     ) -> RanaPath:
+        """We expect a directory with a .gpkg file and optional raster files.
+
+        The optional raster files should be named (exactly) dem.tif, infiltration.tif and friction.tif.
+        """
         self.logger.info(f"Writing schematisation to '{rana_path}'...")
         file_upload, schematisation_id = self._rana_schematisation_gateway.create(
             rana_path
