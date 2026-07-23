@@ -2,11 +2,18 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 from zipfile import ZipFile
 
-from pytest import fixture
-from threedi_api_client.openapi import FileReadOnly, RevisionRaster, Upload, V3Api
+from pytest import fixture, raises
+from threedi_api_client.openapi import (
+    FileReadOnly,
+    Revision,
+    RevisionRaster,
+    Upload,
+    V3Api,
+)
 
 from rana_process_sdk.application.upload_schematisation import (
     UPLOAD_TIMEOUT,
+    commit_revision,
     md5,
     upload_raster,
     upload_sqlite,
@@ -121,3 +128,78 @@ def test_upload_raster_already_exists(md5: Mock, threedi_api: Mock, local_file: 
     )
     threedi_api.schematisations_revisions_rasters_upload.assert_not_called()
     md5.assert_called_once_with(local_file)
+
+
+def test_commit_no_wait(threedi_api: Mock):
+    # Simulate that all files are already uploaded
+    mock_revision = Mock(
+        Revision,
+        sqlite=Mock(file=Mock(state="uploaded")),
+        rasters=[Mock(file=Mock(state="uploaded"))],
+    )
+    threedi_api.schematisations_revisions_read.return_value = mock_revision
+
+    commit_revision(threedi_api, 100, 1, "Commit message")
+
+    threedi_api.schematisations_revisions_read.assert_called_once_with(
+        100, 1, _request_timeout=10
+    )
+    threedi_api.schematisations_revisions_commit.assert_called_once_with(
+        100, 1, {"commit_message": "Commit message"}, _request_timeout=10
+    )
+
+
+@patch(f"{MODULE}.time.sleep")
+def test_commit_wait_once(mock_sleep: Mock, threedi_api: Mock):
+    # Simulate that the first call returns 'created' and the second call returns 'uploaded'
+    mock_revision_created = Mock(
+        Revision,
+        sqlite=Mock(file=Mock(state="uploaded")),
+        rasters=[Mock(file=Mock(state="created"))],
+    )
+    mock_revision_uploaded = Mock(
+        Revision,
+        sqlite=Mock(file=Mock(state="uploaded")),
+        rasters=[Mock(file=Mock(state="uploaded"))],
+    )
+    threedi_api.schematisations_revisions_read.side_effect = [
+        mock_revision_created,
+        mock_revision_uploaded,
+    ]
+
+    commit_revision(threedi_api, 100, 1, "Commit message")
+
+    assert threedi_api.schematisations_revisions_read.call_count == 2
+    mock_sleep.assert_called_once_with(0.5)
+    threedi_api.schematisations_revisions_commit.assert_called_once()
+
+
+@patch(f"{MODULE}.time.sleep")
+def test_commit_timeout(mock_sleep: Mock, threedi_api: Mock):
+    mock_revision_created = Mock(
+        Revision,
+        sqlite=Mock(file=Mock(state="created")),
+        rasters=[Mock(file=Mock(state="created"))],
+    )
+    threedi_api.schematisations_revisions_read.return_value = mock_revision_created
+
+    with raises(RuntimeError):
+        commit_revision(threedi_api, 100, 1, "Commit message")
+
+    assert threedi_api.schematisations_revisions_read.call_count == 8
+    assert mock_sleep.call_count == 8
+    threedi_api.schematisations_revisions_commit.assert_not_called()
+
+
+def test_commit_unexpected_state(threedi_api: Mock):
+    mock_revision_unexpected = Mock(
+        Revision,
+        sqlite=Mock(file=Mock(state="uploaded")),
+        rasters=[Mock(file=Mock(state="failed"))],
+    )
+    threedi_api.schematisations_revisions_read.return_value = mock_revision_unexpected
+
+    with raises(RuntimeError):
+        commit_revision(threedi_api, 100, 1, "Commit message")
+
+    threedi_api.schematisations_revisions_commit.assert_not_called()

@@ -83,10 +83,10 @@ def upload_raster(
 
 def commit_revision(
     threedi_api: V3Api, rev_id: int, schema_id: int, commit_message: str
-) -> Revision:
+) -> None:
     # First wait for all files to have turned to 'uploaded'
     for wait_time in [0.5, 1.0, 2.0, 10.0, 30.0, 60.0, 120.0, 300.0]:
-        revision = threedi_api.schematisations_revisions_read(
+        revision: Revision = threedi_api.schematisations_revisions_read(
             rev_id, schema_id, _request_timeout=API_CLIENT_TIMEOUT
         )
         states = [revision.sqlite.file.state]
@@ -95,9 +95,6 @@ def commit_revision(
         if all(state == "uploaded" for state in states):
             break
         elif any(state == "created" for state in states):
-            logging.info(
-                f"Sleeping {wait_time} seconds to wait for the files to become 'uploaded'..."
-            )
             time.sleep(wait_time)
             continue
         else:
@@ -105,15 +102,12 @@ def commit_revision(
     else:
         raise RuntimeError("Some files are still in 'created' state")
 
-    schematisation_revision: Revision = threedi_api.schematisations_revisions_commit(
+    threedi_api.schematisations_revisions_commit(
         rev_id,
         schema_id,
         {"commit_message": commit_message},
         _request_timeout=API_CLIENT_TIMEOUT,
     )
-
-    logging.info(f"Committed revision {revision.number}.")
-    return schematisation_revision
 
 
 def upload_schematisation(
