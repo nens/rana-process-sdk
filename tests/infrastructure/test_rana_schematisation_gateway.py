@@ -9,8 +9,6 @@ from rana_process_sdk.infrastructure import (
     RanaSchematisationGateway,
 )
 
-MODULE = "rana_process_sdk.infrastructure.rana_files_gateway"
-
 
 @fixture
 def provider() -> Mock:
@@ -22,16 +20,21 @@ def gateway(provider: Mock) -> PrefectRanaSchematisationGateway:
     return PrefectRanaSchematisationGateway(provider)
 
 
-def test_upload(gateway: RanaSchematisationGateway, provider: Mock):
-    schematisation_id = "abc123"
-    file_json = {"id": "path", "ref": "abc123", "last_modified": "2021-01-01T00:00:00Z"}
+def test_create(gateway: RanaSchematisationGateway, provider: Mock):
+    file_json = {
+        "id": "path",
+        "ref": "abc123",
+        "last_modified": "2021-01-01T00:00:00Z",
+        "schematisation_id": 123,
+        "revision_id": None,
+    }
     provider.job_request.return_value = file_json
 
-    result = gateway.upload("path", schematisation_id)
+    result = gateway.create("path")
 
-    assert result == FileUpload.model_validate(file_json)
+    assert result == (FileUpload.model_validate(file_json), 123)
     provider.job_request.assert_called_once_with(
         "POST",
-        "threedi-schematisations",
-        params={"path": "path", "schematisation_id": "abc123", "branch": "main"},
+        "model-schematisations",
+        params={"path": "path"},
     )

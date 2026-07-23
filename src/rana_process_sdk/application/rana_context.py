@@ -28,7 +28,7 @@ from ..infrastructure import (
     unpack_optional,
 )
 from ..settings import get_settings
-from .types import RanaPath, ThreediSchematisation, path_picker_from_json_prop
+from .types import RanaPath, path_picker_from_json_prop
 from .widgets import DirectoryPickerWidget, PathPickerWidget
 
 if TYPE_CHECKING:
@@ -132,6 +132,7 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
         *,
         data_type_override: dict[str, str] = {},
         meta_override: dict[str, Json] = {},
+        commit_message: dict[str, str] = {},
     ) -> None:
         self.output = cast(T, output)
         assert self.output is not None
@@ -147,7 +148,9 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
                 else:
                     if path_details.data_type == "threedi_schematisation":
                         rana_path = self.upload_schematisation(
-                            output_value, self.output_paths[key]
+                            Path(output_value),
+                            self.output_paths[key],
+                            commit_message=commit_message.get(key),
                         )
                     else:
                         rana_path = self.upload(
@@ -278,12 +281,16 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
     ) -> RanaPath:
         raise NotImplementedError("Upload method must be implemented in a subclass")
 
-    def upload_schematisation(self, schematisation_id: str, rana_path: str) -> RanaPath:
-        self.logger.info(f"Writing schematisation to '{rana_path}'...")
-        file_upload = self._rana_schematisation_gateway.upload(
-            rana_path, schematisation_id
+    def upload_schematisation(
+        self, local_dir: Path, rana_path: str, commit_message: str | None = None
+    ) -> RanaPath:
+        """We expect a directory with a .gpkg file and optional raster files.
+
+        The optional raster files should be named (exactly) dem.tif, infiltration.tif and friction.tif.
+        """
+        raise NotImplementedError(
+            "Upload_schematisation method must be implemented in a subclass"
         )
-        return RanaPath(id=rana_path, ref=file_upload.ref)
 
     def upload_dir(
         self,
@@ -349,9 +356,4 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
     def setup_logger(self) -> None:
         raise NotImplementedError(
             "setup_logger method must be implemented in a subclass"
-        )
-
-    def schematisation_id(self, schematisation: ThreediSchematisation) -> int:
-        raise NotImplementedError(
-            "schematisation_id method must be implemented in a subclass"
         )

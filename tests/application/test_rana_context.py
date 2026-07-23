@@ -173,7 +173,7 @@ def file_base_rana_context() -> RanaContext[FileOutputOptional]:
 
 @fixture
 def schematisation_base_rana_context() -> RanaContext[SchematisationOutput]:
-    return RanaContext[SchematisationOutput](output_paths={"x": "a/foo.txt"})
+    return RanaContext[SchematisationOutput](output_paths={"x": "a/Foo"})
 
 
 @fixture
@@ -309,19 +309,23 @@ def test_base_rana_context_set_output_with_file_ignored(
 @patch.object(
     RanaContext,
     "upload_schematisation",
-    return_value=RanaPath(id="a/foo.txt", ref="abc123"),
+    return_value=RanaPath(id="a/Foo", ref="abc123"),
 )
 def test_base_rana_context_set_output_with_schematisation(
     upload_schematisation: Mock,
     schematisation_base_rana_context: RanaContext[SchematisationOutput],
     rana_runtime: Mock,
 ):
-    schematisation_base_rana_context.set_output({"x": "schematisation_id"})
+    schematisation_base_rana_context.set_output(
+        {"x": "some/dir"}, commit_message={"x": "Bar"}
+    )
 
-    upload_schematisation.assert_called_once_with("schematisation_id", "a/foo.txt")
+    upload_schematisation.assert_called_once_with(
+        Path("some/dir"), "a/Foo", commit_message="Bar"
+    )
     # the result contains the rana path (not the local one)
     rana_runtime.set_result.assert_called_once_with(
-        {"x": {"variable_type": "rana_path", "id": "a/foo.txt", "ref": "abc123"}}
+        {"x": {"variable_type": "rana_path", "id": "a/Foo", "ref": "abc123"}}
     )
 
 
@@ -462,29 +466,6 @@ def test_expected_files():
         "readme.md": FileOutput(is_optional=True, data_type=None, meta_values={}),
         "other.tif": FileOutput(is_optional=True, data_type=None, meta_values={}),
     }
-
-
-def test_upload_schematisation(
-    schematisation_rana_context: RanaContext[SchematisationOutput],
-    rana_runtime: Mock,
-    rana_schematisation_gateway: Mock,
-):
-    rana_path = "a/foo"
-    schematisation_id = "schematisation_id"
-    file = File(**{"id": "a/foo.txt", "last_modified": "2021-01-01T00:00:00Z"})
-    rana_schematisation_gateway.upload.return_value = file
-
-    actual = schematisation_rana_context.upload_schematisation(
-        schematisation_id, rana_path
-    )
-
-    assert actual == RanaPath(id=rana_path, ref="main")
-    rana_runtime.logger.info.assert_called_once_with(
-        f"Writing schematisation to '{rana_path}'..."
-    )
-    rana_schematisation_gateway.upload.assert_called_once_with(
-        rana_path, schematisation_id
-    )
 
 
 @patch.object(
