@@ -5,9 +5,8 @@ from pathlib import Path
 from zipfile import ZipFile
 
 import urllib3
-from threedi_api_client.api import ThreediApi
 from threedi_api_client.files import upload_file
-from threedi_api_client.openapi import Revision
+from threedi_api_client.openapi import Revision, Upload, V3Api
 
 UPLOAD_TIMEOUT = urllib3.Timeout(connect=60, read=600)
 API_CLIENT_TIMEOUT = 10
@@ -15,57 +14,51 @@ API_CLIENT_TIMEOUT = 10
 __all__ = ["upload_schematisation"]
 
 
-def md5(fname: str | Path) -> str:
+def md5(fname: Path) -> str:
     """
     Computes the MD5 checksum of a file.
 
     Parameters:
-    - fname (str | Path): Path to the file.
+    - fname (Path): Path to the file.
 
     Returns:
     - str: The MD5 checksum as a hexadecimal string.
     """
     hash_md5 = hashlib.md5()
-    with open(fname, "rb") as f:
+    with fname.open("rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
 
 def upload_sqlite(
-    threedi_api: ThreediApi,
+    threedi_api: V3Api,
     schematisation_id: int,
     revision_id: int,
-    sqlite_path: str | Path,
+    sqlite_path: Path,
 ) -> None:
-    sqlite_path = Path(sqlite_path)
     sqlite_zip_path = sqlite_path.with_suffix(".zip")
-    ZipFile(sqlite_zip_path, mode="w").write(
-        str(sqlite_path), arcname=str(sqlite_path.name)
-    )
-    upload = threedi_api.schematisations_revisions_sqlite_upload(
+    ZipFile(sqlite_zip_path, mode="w").write(sqlite_path, arcname=sqlite_path.name)
+    upload: Upload = threedi_api.schematisations_revisions_sqlite_upload(
         id=revision_id,
         schematisation_pk=schematisation_id,
-        data={"filename": str(sqlite_zip_path.name)},
+        data={"filename": sqlite_zip_path.name},
         _request_timeout=API_CLIENT_TIMEOUT,
     )
-    if upload.put_url is None:
-        logging.info(f"Sqlite '{sqlite_path.name}' already existed, skipping upload.")
-    else:
-        logging.info(f"Uploading '{str(sqlite_path.name)}'...")
-        upload_file(upload.put_url, sqlite_zip_path, timeout=UPLOAD_TIMEOUT)
+    assert upload.put_url, "Upload URL should not be None"
+    logging.info(f"Uploading '{str(sqlite_path.name)}'...")
+    upload_file(upload.put_url, sqlite_zip_path, timeout=UPLOAD_TIMEOUT)
 
 
 def upload_raster(
-    threedi_api: ThreediApi,
+    threedi_api: V3Api,
     rev_id: int,
     schema_id: int,
     raster_type: str,
-    raster_path: str | Path,
+    raster_path: Path,
 ) -> None:
     logging.info(f"Creating '{raster_type}' raster...")
-    raster_path = Path(raster_path)
-    md5sum = md5(str(raster_path))
+    md5sum = md5(raster_path)
     data = {"name": raster_path.name, "type": raster_type, "md5sum": md5sum}
     raster_create = threedi_api.schematisations_revisions_rasters_create(
         rev_id, schema_id, data, _request_timeout=API_CLIENT_TIMEOUT
@@ -84,7 +77,7 @@ def upload_raster(
 
 
 def commit_revision(
-    threedi_api: ThreediApi, rev_id: int, schema_id: int, commit_message: str
+    threedi_api: V3Api, rev_id: int, schema_id: int, commit_message: str
 ) -> Revision:
     # First wait for all files to have turned to 'uploaded'
     for wait_time in [0.5, 1.0, 2.0, 10.0, 30.0, 60.0, 120.0, 300.0]:
@@ -119,7 +112,7 @@ def commit_revision(
 
 
 def upload_schematisation(
-    threedi_api: ThreediApi,
+    threedi_api: V3Api,
     schematisation_id: int,
     local_dir: Path,
     commit_message: str | None = None,
