@@ -393,6 +393,34 @@ def test_upload_directory(rana_context: PrefectRanaContext, job_working_dir: Pat
         rana_context.upload(path, Path("a/foo.txt"))
 
 
+@patch(f"{MODULE}.upload_schematisation")
+@patch.object(PrefectRanaContext, "threedi_api")
+def test_upload_schematisation(
+    threedi_api: Mock,
+    upload_schematisation: Mock,
+    rana_context: PrefectRanaContext,
+    prefect_rana_runtime: Mock,
+    rana_schematisation_gateway: Mock,
+):
+    rana_path = "a/foo"
+    file = File(**{"id": rana_path, "last_modified": "2021-01-01T00:00:00Z"})
+    local_path = Path("some/dir")
+    rana_schematisation_gateway.create.return_value = (file, 123)
+
+    actual = rana_context.upload_schematisation(
+        local_path, rana_path, commit_message="Foo"
+    )
+
+    assert actual == RanaPath(id=rana_path, ref="main")
+    rana_schematisation_gateway.create.assert_called_once_with(rana_path)
+    upload_schematisation.assert_called_once_with(
+        threedi_api.return_value,
+        123,
+        local_path,
+        commit_message="Foo",
+    )
+
+
 def test_context_manager(
     rana_context: PrefectRanaContext,
     prefect_rana_runtime: Mock,

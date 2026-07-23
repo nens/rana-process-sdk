@@ -7,6 +7,8 @@ from uuid import UUID
 from pydantic import SecretStr
 from threedi_api_client.files import download_file, upload_file
 
+from rana_process_sdk.application import upload_schematisation
+
 from ..domain import (
     FileStat,
     History,
@@ -133,6 +135,21 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
                 upload_obj, data_type=data_type, description=description, meta=meta
             ).ref,
         )
+
+    def upload_schematisation(
+        self, local_dir: Path, rana_path: str, commit_message: str | None = None
+    ) -> RanaPath:
+        self.logger.info(f"Writing schematisation to '{rana_path}'...")
+        file_upload, schematisation_id = self._rana_schematisation_gateway.create(
+            rana_path
+        )
+        upload_schematisation(
+            self.threedi_api(),
+            schematisation_id,
+            local_dir,
+            commit_message=commit_message,
+        )
+        return RanaPath(id=file_upload.id, ref=file_upload.ref)
 
     def __enter__(self) -> None:
         self._rana_runtime.create_progress()

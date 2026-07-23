@@ -218,9 +218,11 @@ def test_upload_schematisation(
 ):
     sqlite_file = tmp_path / "test_schematisation.gpkg"
     sqlite_file.write_text("This is a test schematisation.")
-    dem_file = tmp_path / "dem.tif"
+    dem_file = tmp_path / "dem.tif"  # with a 'regular' name, type is "dem_file"
     dem_file.write_text("This is a test dem.")
-    friction_file = tmp_path / "friction.tif"
+    friction_file = (
+        tmp_path / "friction.tif"
+    )  # irregular name, type is "frict_coef_file"
     friction_file.write_text("This is a test friction.")
 
     # Mock the API responses

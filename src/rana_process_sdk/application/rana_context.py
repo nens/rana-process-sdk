@@ -29,7 +29,6 @@ from ..infrastructure import (
 )
 from ..settings import get_settings
 from .types import RanaPath, path_picker_from_json_prop
-from .upload_schematisation import upload_schematisation
 from .widgets import DirectoryPickerWidget, PathPickerWidget
 
 if TYPE_CHECKING:
@@ -289,17 +288,9 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
 
         The optional raster files should be named (exactly) dem.tif, infiltration.tif and friction.tif.
         """
-        self.logger.info(f"Writing schematisation to '{rana_path}'...")
-        file_upload, schematisation_id = self._rana_schematisation_gateway.create(
-            rana_path
+        raise NotImplementedError(
+            "Upload_schematisation method must be implemented in a subclass"
         )
-        upload_schematisation(
-            self.threedi_api(),
-            schematisation_id,
-            local_dir,
-            commit_message=commit_message,
-        )
-        return RanaPath(id=file_upload.id, ref=file_upload.ref)
 
     def upload_dir(
         self,

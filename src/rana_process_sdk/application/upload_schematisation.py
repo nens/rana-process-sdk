@@ -18,6 +18,35 @@ API_CLIENT_TIMEOUT = 10
 
 __all__ = ["upload_schematisation"]
 
+# Make a mapping from HCC API raster types to the expected file names.
+# Some types have multiple expected file names for backwards compatibility, so we use a list of names for each type.
+ALLOWED_RASTER_TYPES = [
+    "dem_file",
+    "equilibrium_infiltration_rate_file",
+    "frict_coef_file",
+    "initial_groundwater_level_file",
+    "initial_waterlevel_file",
+    "groundwater_hydro_connectivity_file",
+    "groundwater_impervious_layer_level_file",
+    "infiltration_decay_period_file",
+    "initial_infiltration_rate_file",
+    "leakage_file",
+    "phreatic_storage_capacity_file",
+    "hydraulic_conductivity_file",
+    "porosity_file",
+    "infiltration_rate_file",
+    "max_infiltration_capacity_file",
+    "interception_file",
+    "vegetation_height_file",
+    "vegetation_drag_coefficient_file",
+    "vegetation_stem_count_file",
+    "vegetation_stem_diameter_file",
+    "initial_groundwater_concentration_file",
+]
+RASTER_FILE_NAMES = {x: [x[:-5] + ".tif"] for x in ALLOWED_RASTER_TYPES}
+RASTER_FILE_NAMES["frict_coef_file"].append("friction.tif")
+RASTER_FILE_NAMES["infiltration_rate_file"].append("infiltration.tif")
+
 
 def md5(fname: Path) -> str:
     """
@@ -144,16 +173,13 @@ def upload_schematisation(
     )
 
     # # Rasters
-    rasters = {
-        "dem.tif": "dem_file",
-        "infiltration.tif": "infiltration_rate_file",
-        "friction.tif": "frict_coef_file",
-    }
-
-    for raster_file, raster_type in rasters.items():
-        raster_path = local_dir / raster_file
-        if not raster_path.exists():
-            continue
+    for raster_type, raster_file_name_options in RASTER_FILE_NAMES.items():
+        for raster_file_name in raster_file_name_options:
+            raster_path = local_dir / raster_file_name
+            if raster_path.exists():
+                break
+        else:
+            continue  # No raster file found for this type, skip to the next type
         logging.info(f"Saving '{raster_path.name}'...")
         upload_raster(
             threedi_api=threedi_api,
