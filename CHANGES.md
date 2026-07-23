@@ -4,7 +4,11 @@
 ## 0.16 (unreleased)
 
 
-- Nothing changed yet.
+- Removed RanaContext.schematisation_id.
+
+- Changed handling of schematisation outputs. Now it expects a directory with the schematisation
+  files present. The RanaContext creates the schematisation in a project, uploads the files, and
+  commits the revision. A commit_message can be provided by the caller.
 
 
 ## 0.15 (2026-06-16)
