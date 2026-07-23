@@ -6,7 +6,12 @@ from zipfile import ZipFile
 
 import urllib3
 from threedi_api_client.files import upload_file
-from threedi_api_client.openapi import Revision, Upload, V3Api
+from threedi_api_client.openapi import (
+    Revision,
+    RevisionRaster,
+    Upload,
+    V3Api,
+)
 
 UPLOAD_TIMEOUT = urllib3.Timeout(connect=60, read=600)
 API_CLIENT_TIMEOUT = 10
@@ -38,7 +43,8 @@ def upload_sqlite(
     sqlite_path: Path,
 ) -> None:
     sqlite_zip_path = sqlite_path.with_suffix(".zip")
-    ZipFile(sqlite_zip_path, mode="w").write(sqlite_path, arcname=sqlite_path.name)
+    with ZipFile(sqlite_zip_path, mode="w") as f:
+        f.write(sqlite_path, arcname=sqlite_path.name)
     upload: Upload = threedi_api.schematisations_revisions_sqlite_upload(
         id=revision_id,
         schematisation_pk=schematisation_id,
@@ -46,7 +52,6 @@ def upload_sqlite(
         _request_timeout=API_CLIENT_TIMEOUT,
     )
     assert upload.put_url, "Upload URL should not be None"
-    logging.info(f"Uploading '{str(sqlite_path.name)}'...")
     upload_file(upload.put_url, sqlite_zip_path, timeout=UPLOAD_TIMEOUT)
 
 
@@ -57,21 +62,21 @@ def upload_raster(
     raster_type: str,
     raster_path: Path,
 ) -> None:
-    logging.info(f"Creating '{raster_type}' raster...")
     md5sum = md5(raster_path)
     data = {"name": raster_path.name, "type": raster_type, "md5sum": md5sum}
-    raster_create = threedi_api.schematisations_revisions_rasters_create(
-        rev_id, schema_id, data, _request_timeout=API_CLIENT_TIMEOUT
+    raster_create: RevisionRaster = (
+        threedi_api.schematisations_revisions_rasters_create(
+            rev_id, schema_id, data, _request_timeout=API_CLIENT_TIMEOUT
+        )
     )
     if raster_create.file and raster_create.file.state == "uploaded":
-        logging.info(f"Raster '{raster_path}' already exists, skipping upload.")
         return
 
-    logging.info(f"Uploading '{raster_path}'...")
     data = {"filename": raster_path.name}
-    upload = threedi_api.schematisations_revisions_rasters_upload(
+    upload: Upload = threedi_api.schematisations_revisions_rasters_upload(
         raster_create.id, rev_id, schema_id, data, _request_timeout=API_CLIENT_TIMEOUT
     )
+    assert upload.put_url, "Upload URL should not be None"
 
     upload_file(upload.put_url, raster_path, timeout=UPLOAD_TIMEOUT)
 
@@ -133,6 +138,7 @@ def upload_schematisation(
 
     # Data uploaden
     # # Spatialite
+    logging.info(f"Saving '{sqlite_path.name}'...")
     upload_sqlite(
         threedi_api=threedi_api,
         schematisation_id=schematisation_id,
@@ -151,6 +157,7 @@ def upload_schematisation(
         raster_path = local_dir / raster_file
         if not raster_path.exists():
             continue
+        logging.info(f"Saving '{raster_path.name}'...")
         upload_raster(
             threedi_api=threedi_api,
             rev_id=revision_id,
