@@ -87,6 +87,30 @@ class LocalTestRanaContext(RanaContext[T], Generic[T]):
                 )
         return RanaPath(id=rana_path, ref="local-test-ref")
 
+    def upload_schematisation(
+        self, local_dir: Path, rana_path: str, commit_message: str | None = None
+    ) -> RanaPath:
+        self.logger.info(
+            f"                  | Writing schematisation to '{rana_path}' (local test mode)"
+        )
+        target_dir = self._rana_runtime.project_dir / rana_path
+        target_dir.mkdir(parents=True, exist_ok=True)
+        for item in local_dir.iterdir():
+            if item.is_file():
+                shutil.copy2(item, target_dir / item.name)
+        if commit_message:
+            metadata_path = target_dir / "metadata.json"
+            self.logger.info(
+                f"                  | Writing file metadata to '{metadata_path}' (local test mode)"
+            )
+            with metadata_path.open("w") as f:
+                json.dump(
+                    {"commit_message": commit_message},
+                    f,
+                    indent=2,
+                )
+        return RanaPath(id=rana_path, ref="local-test-ref")
+
     def __enter__(self) -> None:
         self.job_working_dir.mkdir(mode=0o0700, exist_ok=True)
 
