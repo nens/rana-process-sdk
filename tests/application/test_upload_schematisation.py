@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 from zipfile import ZipFile
 
 from pytest import fixture, raises
@@ -16,6 +16,7 @@ from rana_process_sdk.application.upload_schematisation import (
     commit_revision,
     md5,
     upload_raster,
+    upload_schematisation,
     upload_sqlite,
 )
 
@@ -203,3 +204,72 @@ def test_commit_unexpected_state(threedi_api: Mock):
         commit_revision(threedi_api, 100, 1, "Commit message")
 
     threedi_api.schematisations_revisions_commit.assert_not_called()
+
+
+@patch(f"{MODULE}.upload_sqlite")
+@patch(f"{MODULE}.upload_raster")
+@patch(f"{MODULE}.commit_revision")
+def test_upload_schematisation(
+    commit_revision_mock: Mock,
+    upload_raster_mock: Mock,
+    upload_sqlite_mock: Mock,
+    threedi_api: Mock,
+    tmp_path: Path,
+):
+    sqlite_file = tmp_path / "test_schematisation.gpkg"
+    sqlite_file.write_text("This is a test schematisation.")
+    dem_file = tmp_path / "dem.tif"
+    dem_file.write_text("This is a test dem.")
+    friction_file = tmp_path / "friction.tif"
+    friction_file.write_text("This is a test friction.")
+
+    # Mock the API responses
+    threedi_api.schematisations_revisions_create.return_value = Mock(Revision, id=100)
+
+    upload_schematisation(threedi_api, 1, tmp_path, "Commit message")
+
+    threedi_api.schematisations_revisions_create.assert_called_once_with(
+        1, data={"empty": True}, _request_timeout=10
+    )
+
+    upload_sqlite_mock.assert_called_once_with(
+        threedi_api=threedi_api,
+        schematisation_id=1,
+        revision_id=100,
+        sqlite_path=sqlite_file,
+    )
+
+    assert upload_raster_mock.call_count == 2
+    upload_raster_mock.assert_has_calls(
+        [
+            call(
+                threedi_api=threedi_api,
+                schematisation_id=1,
+                revision_id=100,
+                raster_type="dem_file",
+                raster_path=dem_file,
+            ),
+            call(
+                threedi_api=threedi_api,
+                schematisation_id=1,
+                revision_id=100,
+                raster_type="frict_coef_file",
+                raster_path=friction_file,
+            ),
+        ]
+    )
+
+    commit_revision_mock.assert_called_once_with(
+        threedi_api=threedi_api,
+        revision_id=100,
+        schematisation_id=1,
+        commit_message="Commit message",
+    )
+
+
+def test_upload_schematisation_no_sqlite(tmp_path: Path, threedi_api: Mock):
+    # Create a directory without a .gpkg file
+    (tmp_path / "dem.tif").write_text("This is a test dem.")
+
+    with raises(RuntimeError, match="The geopackage failed to generate"):
+        upload_schematisation(threedi_api, 1, tmp_path, "Commit message")
