@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.16 (unreleased)
+## 0.16 (2026-07-27)
 
 
 - Removed RanaContext.schematisation_id.
