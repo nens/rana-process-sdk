@@ -1,6 +1,12 @@
 # Changelog of rana-process-sdk
 
 
+## 0.17 (unreleased)
+
+
+- Nothing changed yet.
+
+
 ## 0.16 (2026-07-27)
 
 
