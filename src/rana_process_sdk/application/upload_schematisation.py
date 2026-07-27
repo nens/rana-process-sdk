@@ -14,7 +14,7 @@ from threedi_api_client.openapi import (
 )
 
 UPLOAD_TIMEOUT = urllib3.Timeout(connect=60, read=600)
-API_CLIENT_TIMEOUT = 10
+API_CLIENT_TIMEOUT = 60
 
 __all__ = ["upload_schematisation"]
 

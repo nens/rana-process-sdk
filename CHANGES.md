@@ -4,7 +4,7 @@
 ## 0.17 (unreleased)
 
 
-- Nothing changed yet.
+- Increased request timeout of upload_schematisation requests from 10 to 60 seconds.
 
 
 ## 0.16 (2026-07-27)

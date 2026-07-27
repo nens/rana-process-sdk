@@ -63,7 +63,7 @@ def test_upload_sqlite(upload_file: Mock, threedi_api: Mock, local_file: Path):
         id=100,
         schematisation_pk=1,
         data={"filename": "test_file.zip"},
-        _request_timeout=10,
+        _request_timeout=60,
     )
     upload_file.assert_called_once_with(
         "http://example.com/upload",
@@ -96,14 +96,14 @@ def test_upload_raster(
         100,
         1,
         {"name": "test_file.txt", "type": "test_raster", "md5sum": "dummy_md5"},
-        _request_timeout=10,
+        _request_timeout=60,
     )
     threedi_api.schematisations_revisions_rasters_upload.assert_called_once_with(
         threedi_api.schematisations_revisions_rasters_create.return_value.id,
         100,
         1,
         {"filename": "test_file.txt"},
-        _request_timeout=10,
+        _request_timeout=60,
     )
     upload_file.assert_called_once_with(
         "http://example.com/upload",
@@ -125,7 +125,7 @@ def test_upload_raster_already_exists(md5: Mock, threedi_api: Mock, local_file: 
         100,
         1,
         {"name": "test_file.txt", "type": "test_raster", "md5sum": "dummy_md5"},
-        _request_timeout=10,
+        _request_timeout=60,
     )
     threedi_api.schematisations_revisions_rasters_upload.assert_not_called()
     md5.assert_called_once_with(local_file)
@@ -143,10 +143,10 @@ def test_commit_no_wait(threedi_api: Mock):
     commit_revision(threedi_api, 100, 1, "Commit message")
 
     threedi_api.schematisations_revisions_read.assert_called_once_with(
-        100, 1, _request_timeout=10
+        100, 1, _request_timeout=60
     )
     threedi_api.schematisations_revisions_commit.assert_called_once_with(
-        100, 1, {"commit_message": "Commit message"}, _request_timeout=10
+        100, 1, {"commit_message": "Commit message"}, _request_timeout=60
     )
 
 
@@ -231,7 +231,7 @@ def test_upload_schematisation(
     upload_schematisation(threedi_api, 1, tmp_path, "Commit message")
 
     threedi_api.schematisations_revisions_create.assert_called_once_with(
-        1, data={"empty": True}, _request_timeout=10
+        1, data={"empty": True}, _request_timeout=60
     )
 
     upload_sqlite_mock.assert_called_once_with(
