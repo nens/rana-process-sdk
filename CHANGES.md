@@ -4,13 +4,13 @@
 ## 0.19 (unreleased)
 
 
-- Nothing changed yet.
+- Fixed bug in schematisation upload.
 
 
 ## 0.18 (2026-07-30)
 
 
-- Fixed bug in schematisation upload.
+- Nothing changed (faulty release).
 
 
 ## 0.17 (2026-07-27)
