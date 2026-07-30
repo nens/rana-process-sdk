@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.19 (unreleased)
+## 0.19 (2026-07-30)
 
 
 - Fixed bug in schematisation upload.
