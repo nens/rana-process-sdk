@@ -4,7 +4,7 @@
 ## 0.18 (unreleased)
 
 
-- Nothing changed yet.
+- Fixed bug in schematisation upload.
 
 
 ## 0.17 (2026-07-27)
