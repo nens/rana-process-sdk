@@ -7,8 +7,6 @@ from uuid import UUID
 from pydantic import SecretStr
 from threedi_api_client.files import download_file, upload_file
 
-from rana_process_sdk.application import upload_schematisation
-
 from ..domain import (
     FileStat,
     History,
@@ -31,6 +29,7 @@ from ..infrastructure import (
     ThreediApiKeyGateway,
 )
 from .rana_context import RanaContext, transfer_extension
+from .schematisation import upload_schematisation
 from .types import RanaPath
 
 __all__ = ["PrefectRanaContext"]

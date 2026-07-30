@@ -11,7 +11,7 @@ from threedi_api_client.openapi import (
     V3Api,
 )
 
-from rana_process_sdk.application.upload_schematisation import (
+from rana_process_sdk.application.schematisation import (
     UPLOAD_TIMEOUT,
     commit_revision,
     md5,
@@ -20,7 +20,7 @@ from rana_process_sdk.application.upload_schematisation import (
     upload_sqlite,
 )
 
-MODULE = "rana_process_sdk.application.upload_schematisation"
+MODULE = "rana_process_sdk.application.schematisation"
 
 
 @fixture
