@@ -56,10 +56,8 @@ class ProcessInternalError(Exception):
             traceback=traceback.format_exc(),
             error_type="internal",
             description=(
-                "Something went wrong during the execution of this process. Our team is **not** automatically notified of this error, so please let us know if you need assistance.\n\n"
-                "When contacting support, please include:\n\n"
-                "Job ID: {jobId}\n"
-                "Project ID: {projectId}"
+                "Something went wrong during the execution of this process. "
+                "Our team has been automatically notified and will investigate."
             ),
         )
 

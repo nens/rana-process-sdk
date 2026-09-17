@@ -92,12 +92,20 @@ def test_filter_filter_finished_in_state_failed(event):
     assert not prefect_log_filter(event, {})
 
 
-def test_filter_formatted_exception(event):
+def test_filter_formatted_user_exception(event):
     event["logentry"]["message"] = (
         '{"title": "Process execution encountered an exception: ProcessUserError: Polygon not found", "traceback": "Traceback (most recent call last):\\n  File \\"/code/src/rana_process_sdk/application/rana_flow.py\\", line 59, in wrapper\\n    return func(*args, **kwargs)\\n           ^^^^^^^^^^^^^^^^^^^^^\\n  File \\"/code/src/rana_flows/define_study_area.py\\", line 155, in define_study_area\\n    check_connected_polygons(selected_polygons)\\n  File \\"/code/src/rana_flows/define_study_area_lib/gdal_functions.py\\", line 189, in check_connected_polygons\\n    raise ProcessUserError(\\"Polygon not found\\", \\"Polygon is empty or not found.\\")\\nrana_process_sdk.application.exceptions.ProcessUserError: (\'Polygon not found\', \'Polygon is empty or not found.\')\\n", "error_type": "user", "description": "Polygon is empty or not found."}'
     )
 
     assert not prefect_log_filter(event, {})
+
+
+def test_filter_formatted_internal_exception(event):
+    event["logentry"]["message"] = (
+        '{"title": "Process execution encountered an exception: ProcessInternalError(ValueError): Unexpected failure", "traceback": "NoneType: None\\n", "error_type": "internal", "description": "Something went wrong during the execution of this process. Our team has been automatically notified and will investigate."}'
+    )
+
+    assert prefect_log_filter(event, {}) == event
 
 
 def test_filter_misformatted_exception(event):

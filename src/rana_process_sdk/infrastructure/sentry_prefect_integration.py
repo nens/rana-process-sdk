@@ -19,12 +19,13 @@ def prefect_log_filter(event: Event, hint: Hint) -> Event | None:
     message = str((event.get("logentry") or {}).get("message"))
     if message.startswith("{"):
         try:
-            # Exception with formatted messages have already been logged by sentry
-            FormattedException(**json.loads(message))
+            # User errors are already represented by the process response; internal
+            # errors must remain visible in Sentry for the development team.
+            formatted_exception = FormattedException(**json.loads(message))
         except Exception:
             return event
         else:
-            return None
+            return None if formatted_exception.error_type == "user" else event
     if message.startswith(FAILED_STATE_MESSAGE) or ProcessUserError.__name__ in message:
         # Filter out exception from ending in failed state or user errors
         return None
