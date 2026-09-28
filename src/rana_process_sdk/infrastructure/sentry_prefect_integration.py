@@ -25,7 +25,7 @@ def prefect_log_filter(event: Event, hint: Hint) -> Event | None:
         except Exception:
             return event
         else:
-            return None if formatted_exception.error_type == "user" else event
+            return None
     if message.startswith(FAILED_STATE_MESSAGE) or ProcessUserError.__name__ in message:
         # Filter out exception from ending in failed state or user errors
         return None
