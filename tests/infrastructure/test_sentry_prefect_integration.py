@@ -105,7 +105,7 @@ def test_filter_formatted_internal_exception(event):
         '{"title": "Process execution encountered an exception: ProcessInternalError(ValueError): Unexpected failure", "traceback": "NoneType: None\\n", "error_type": "internal", "description": "Something went wrong during the execution of this process. Our team has been automatically notified and will investigate."}'
     )
 
-    assert prefect_log_filter(event, {}) == event
+    assert prefect_log_filter(event, {}) is None
 
 
 def test_filter_misformatted_exception(event):
