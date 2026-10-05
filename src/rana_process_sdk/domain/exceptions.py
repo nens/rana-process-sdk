@@ -28,12 +28,13 @@ class ProcessUserError(Exception):
     """
 
     def __init__(self, title: str, description: str | None = None):
+        super().__init__(title)
         self.title = title
         self.description = description
 
     def format(self) -> FormattedException:
         return FormattedException(
-            title=f"Process execution encountered an exception: {self.__class__.__name__}: {self.title}",
+            title=self.title,
             traceback=traceback.format_exc(),
             error_type="user",
             description=self.description,
