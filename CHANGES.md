@@ -4,7 +4,7 @@
 ## 0.20 (unreleased)
 
 
-- Nothing changed yet.
+- Preserve the LakeFS ref returned by the final file upload in directory outputs.
 
 
 ## 0.19 (2026-07-30)
