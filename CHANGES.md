@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.20 (unreleased)
+## 0.20 (2026-10-06)
 
 - Solve directory upload ref by preserving the LakeFS ref returned by the latest upload.
 - Use the process provided title for formatted user errors.
