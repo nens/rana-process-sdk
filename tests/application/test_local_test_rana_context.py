@@ -6,6 +6,7 @@ from pytest import fixture
 from rana_process_sdk import (
     LocalTestRanaContext,
     LocalTestRanaRuntime,
+    RanaPath,
 )
 from rana_process_sdk.domain import RanaDataset
 from rana_process_sdk.settings import LocalTestSettings
@@ -39,3 +40,21 @@ def test_get_dataset(
 ) -> None:
     dataset = local_test_rana_context.get_dataset("dataset-1")
     assert dataset is local_test_settings.datasets["dataset-1"]
+
+
+def test_upload_dir_preserves_local_test_ref(
+    local_test_rana_context: LocalTestRanaContext,
+    local_runtime: Mock,
+    tmp_path: Path,
+) -> None:
+    local_runtime.project_dir = tmp_path / "project"
+    local_path = tmp_path / "output"
+    local_path.mkdir()
+    (local_path / "file.txt").write_text("file contents")
+
+    actual = local_test_rana_context.upload_dir(local_path, "results/")
+
+    assert actual == RanaPath(id="results/", ref="local-test-ref")
+    assert (
+        local_runtime.project_dir / "results/file.txt"
+    ).read_text() == "file contents"

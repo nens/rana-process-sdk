@@ -468,21 +468,32 @@ def test_expected_files():
     }
 
 
-@patch.object(
-    RanaContext, "upload_dir", return_value=RanaPath(id="a/foo/", ref="abc123")
-)
-def test_base_rana_context_set_output_directory(upload_dir: Mock, rana_runtime: Mock):
-    file_base_rana_context = RanaContext[TestDirectoryOutput](
-        output_paths={"x": "a/foo/"}
-    )
+@patch.object(RanaContext, "upload")
+def test_base_rana_context_set_output_directory(
+    upload: Mock, rana_runtime: Mock, tmp_path: Path
+):
+    local_path = tmp_path / "directory"
+    local_path.mkdir()
+    (local_path / "first.txt").touch()
+    (local_path / "nested").mkdir()
+    (local_path / "nested" / "last.txt").touch()
+    context = RanaContext[TestDirectoryOutput](output_paths={"x": "a/foo/"})
+    upload.side_effect = [
+        RanaPath(id="a/first.txt", ref="first-ref"),
+        RanaPath(id="a/nested/last.txt", ref="final-ref"),
+    ]
 
-    file_base_rana_context.set_output({"x": "local"})
+    context.set_output({"x": local_path})
 
-    upload_dir.assert_called_once_with(Path("local"), "a/foo/", {})
-
-    # the result contains the rana path (not the local one)
+    assert upload.call_count == 2
     rana_runtime.set_result.assert_called_once_with(
-        {"x": {"variable_type": "rana_path", "id": "a/foo/", "ref": "abc123"}}
+        {
+            "x": {
+                "variable_type": "rana_path",
+                "id": "a/foo/",
+                "ref": "final-ref",
+            }
+        }
     )
 
 
@@ -526,6 +537,10 @@ def test_base_rana_context_upload_dir(
     (local_path / "foo").mkdir()
     (local_path / "foo" / "bar.txt").touch()
 
+    upload.side_effect = [
+        RanaPath(id="a/foo.txt", ref="first-ref"),
+        RanaPath(id="a/foo/bar.txt", ref="final-ref"),
+    ]
     rana_path = "a/"
 
     actual = base_rana_context.upload_dir(local_path, rana_path)
@@ -547,7 +562,7 @@ def test_base_rana_context_upload_dir(
         ]
     )
 
-    assert actual == RanaPath(id="a/")
+    assert actual == RanaPath(id="a/", ref="final-ref")
 
 
 @patch.object(RanaContext, "upload")
@@ -561,6 +576,10 @@ def test_base_rana_context_upload_dir_with_expected_files(
     (local_path / "foo.txt").touch()
     (local_path / "foo").mkdir()
     (local_path / "foo" / "bar.txt").touch()
+    upload.side_effect = [
+        RanaPath(id="a/foo.txt", ref="first-ref"),
+        RanaPath(id="a/foo/bar.txt", ref="final-ref"),
+    ]
 
     rana_path = "a/"
 
@@ -591,7 +610,20 @@ def test_base_rana_context_upload_dir_with_expected_files(
         ]
     )
 
-    assert actual == RanaPath(id="a/")
+    assert actual == RanaPath(id="a/", ref="final-ref")
+
+
+@patch.object(RanaContext, "upload")
+def test_base_rana_context_upload_dir_empty(
+    upload: Mock, job_working_dir: Path, base_rana_context: RanaContext
+):
+    local_path = job_working_dir / "empty"
+    local_path.mkdir()
+
+    actual = base_rana_context.upload_dir(local_path, "a/")
+
+    upload.assert_not_called()
+    assert actual == RanaPath(id="a/", ref="main")
 
 
 def test_file_output_optional_no_default_err():

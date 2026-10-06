@@ -3,7 +3,7 @@
 
 ## 0.20 (unreleased)
 
-
+- Preserve the LakeFS ref returned by the final file upload in directory outputs.
 - Use the process-provided title for formatted user errors.
 
 

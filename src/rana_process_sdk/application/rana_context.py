@@ -301,6 +301,7 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
         if not local_path.is_dir():
             raise FileNotFoundError(f"Directory at {local_path} does not exist")
         root = Path(rana_path)
+        ref = RanaPath(id=rana_path).ref
         # recursively iterate through all files in the directory
         for file in local_path.rglob("*"):
             if file.is_file():
@@ -308,13 +309,13 @@ class RanaContext(BaseModel, Generic[T], validate_assignment=True):
                 expected_file = expected_files.get(
                     relative_path, FileOutput(is_optional=True)
                 )
-                self.upload(
+                ref = self.upload(
                     local_path=file,
                     rana_path=str(root / relative_path),
                     data_type=expected_file.data_type,
                     meta=expected_file.meta_values,
-                )
-        return RanaPath(id=rana_path)  # TODO put the actual ref here
+                ).ref
+        return RanaPath(id=rana_path, ref=ref)
 
     def get_dataset(self, id: str) -> RanaDataset:
         """Retrieve a dataset by its id in Rana."""
