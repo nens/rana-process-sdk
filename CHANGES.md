@@ -3,8 +3,9 @@
 
 ## 0.20 (unreleased)
 
-- Preserve the LakeFS ref returned by the final file upload in directory outputs.
-- Use the process-provided title for formatted user errors.
+- Solve directory upload ref by preserving the LakeFS ref returned by the latest upload.
+- Use the process provided title for formatted user errors.
+- Update process internal error default message
 
 
 ## 0.19 (2026-07-30)
