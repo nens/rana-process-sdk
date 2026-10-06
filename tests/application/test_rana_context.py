@@ -625,7 +625,7 @@ def test_log_exception_process_user_error(
     base_rana_context.log_exception(exception)
 
     rana_runtime.logger.error.assert_called_once_with(
-        '{"title":"Process execution encountered an exception: ProcessUserError: Test exception","traceback":"NoneType: None\\n","error_type":"user","description":"Test description"}'
+        '{"title":"Test exception","traceback":"NoneType: None\\n","error_type":"user","description":"Test description"}'
     )
 
 

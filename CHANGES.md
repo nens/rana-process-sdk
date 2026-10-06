@@ -4,7 +4,7 @@
 ## 0.20 (unreleased)
 
 
-- Nothing changed yet.
+- Use the process-provided title for formatted user errors.
 
 
 ## 0.19 (2026-07-30)
