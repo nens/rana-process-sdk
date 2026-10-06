@@ -657,7 +657,7 @@ def test_log_exception_process_user_error(
     base_rana_context.log_exception(exception)
 
     rana_runtime.logger.error.assert_called_once_with(
-        '{"title":"Process execution encountered an exception: ProcessUserError: Test exception","traceback":"NoneType: None\\n","error_type":"user","description":"Test description"}'
+        '{"title":"Test exception","traceback":"NoneType: None\\n","error_type":"user","description":"Test description"}'
     )
 
 
@@ -669,7 +669,7 @@ def test_log_exception_process_internal_error(
     base_rana_context.log_exception(exception)
 
     rana_runtime.logger.error.assert_called_once_with(
-        '{"title":"Process execution encountered an exception: ProcessInternalError(ValueError): Test exception","traceback":"NoneType: None\\n","error_type":"internal","description":"Something went wrong during the execution of this process. Our team is **not** automatically notified of this error, so please let us know if you need assistance.\\n\\nWhen contacting support, please include:\\n\\nJob ID: {jobId}\\nProject ID: {projectId}"}'
+        '{"title":"Process execution encountered an exception: ProcessInternalError(ValueError): Test exception","traceback":"NoneType: None\\n","error_type":"internal","description":"Something went wrong during the execution of this process. Our team has been automatically notified and will investigate."}'
     )
 
 

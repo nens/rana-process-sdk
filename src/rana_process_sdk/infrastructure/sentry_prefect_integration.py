@@ -19,7 +19,8 @@ def prefect_log_filter(event: Event, hint: Hint) -> Event | None:
     message = str((event.get("logentry") or {}).get("message"))
     if message.startswith("{"):
         try:
-            # Exception with formatted messages have already been logged by sentry
+            # User errors are already represented by the process response; internal
+            # errors must remain visible in Sentry for the development team.
             FormattedException(**json.loads(message))
         except Exception:
             return event
