@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Generic, TypeVar
 from uuid import UUID
 
-from pydantic import SecretStr
+from pydantic import PrivateAttr, SecretStr
 from threedi_api_client.files import download_file, upload_file
 
 from ..domain import (
@@ -24,10 +24,12 @@ from ..infrastructure import (
     PrefectRanaSchematisationGateway,
     RanaDatasetGateway,
     RanaFileGateway,
+    RanaProcessTimeGateway,
     RanaSchematisationGateway,
     SentryBlock,
     ThreediApiKeyGateway,
 )
+from .process_time_reporter import ProcessTimeReporter
 from .rana_context import RanaContext, transfer_extension
 from .schematisation import upload_schematisation
 from .types import RanaPath
@@ -38,6 +40,8 @@ T = TypeVar("T", bound=RanaProcessParameters)
 
 
 class PrefectRanaContext(RanaContext[T], Generic[T]):
+    _process_time_reporter: ProcessTimeReporter | None = PrivateAttr(default=None)
+
     @cached_property
     def _rana_runtime(self) -> PrefectRanaRuntime:
         return PrefectRanaRuntime()
@@ -65,6 +69,10 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
     @property
     def _rana_dataset_gateway(self) -> RanaDatasetGateway:
         return RanaDatasetGateway()
+
+    @property
+    def _process_time_gateway(self) -> RanaProcessTimeGateway:
+        return RanaProcessTimeGateway()
 
     @property
     def _threedi_api_key_gateway(self) -> ThreediApiKeyGateway:
@@ -153,13 +161,27 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
     def __enter__(self) -> None:
         self._rana_runtime.create_progress()
         self.job_working_dir.mkdir(mode=0o0700, exist_ok=True)
+        self._process_time_reporter = ProcessTimeReporter(
+            self._process_time_gateway, logger=self._rana_runtime.logger
+        )
+        self._process_time_reporter.start()
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:  # type: ignore
-        if self.job_working_dir.is_dir():
-            shutil.rmtree(self.job_working_dir)
-        if key := self._rana_runtime.threedi_api_key:
-            self.threedi_remove_api_key(key)
-        self._rana_runtime.set_progress(100, "Completed", True)
+        # Report the final process time before Prefect sets the final state of the run.
+        # The run fails when the body raises or when the cleanup below raises, so it is reported as failed too.
+        failed = exc_type is not None
+        try:
+            if self.job_working_dir.is_dir():
+                shutil.rmtree(self.job_working_dir)
+            if key := self._rana_runtime.threedi_api_key:
+                self.threedi_remove_api_key(key)
+            self._rana_runtime.set_progress(100, "Completed", True)
+        except BaseException:
+            failed = True
+            raise
+        finally:
+            if self._process_time_reporter is not None:
+                self._process_time_reporter.stop(failed=failed)
 
     def setup_logger(self) -> None:
         try:

@@ -1,3 +1,4 @@
+from asyncio import CancelledError
 from collections.abc import Iterator
 from pathlib import Path
 from unittest.mock import Mock, PropertyMock, patch
@@ -36,6 +37,7 @@ from rana_process_sdk.infrastructure import (
     SENTRY_BLOCK_NAME,
     LizardRasterLayerGateway,
     PrefectRanaRuntime,
+    ProcessTimeOutcome,
     RanaDatasetGateway,
     RanaFileGateway,
     RanaSchematisationGateway,
@@ -81,6 +83,16 @@ class RasterOutput(RanaProcessParameters):
 class MultipleFileOutput(RanaProcessParameters):
     x: File
     y: File
+
+
+@fixture(autouse=True)
+def process_time_gateway() -> Iterator[Mock]:
+    with patch.object(
+        PrefectRanaContext,
+        "_process_time_gateway",
+        new_callable=PropertyMock,
+    ) as m:
+        yield m
 
 
 @fixture
@@ -716,3 +728,91 @@ def test_get_dataset(
 
     rana_dataset_gateway.get.assert_called_once_with("DatasetId")
     rana_dataset_gateway.get_data_links.assert_called_once_with("DatasetId")
+
+
+def test_context_manager_reports_process_time(
+    rana_context: PrefectRanaContext,
+    process_time_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    with rana_context:
+        pass
+
+    report = process_time_gateway.return_value.report
+    assert report.call_args_list[-1].args[0] is ProcessTimeOutcome.SUCCEEDED
+
+
+def test_context_manager_reports_failed_process_time(
+    rana_context: PrefectRanaContext,
+    process_time_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    with raises(ValueError), rana_context:
+        raise ValueError("boom")
+
+    report = process_time_gateway.return_value.report
+    assert report.call_args_list[-1].args[0] is ProcessTimeOutcome.FAILED
+
+
+def test_context_manager_reports_cancelled_process_time_as_failed(
+    rana_context: PrefectRanaContext,
+    process_time_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    with raises(CancelledError), rana_context:
+        raise CancelledError()
+
+    report = process_time_gateway.return_value.report
+    assert report.call_args_list[-1].args[0] is ProcessTimeOutcome.FAILED
+
+
+def test_context_manager_cleanup_error_reports_failed_process_time(
+    rana_context: PrefectRanaContext,
+    process_time_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    prefect_rana_runtime.set_progress.side_effect = RuntimeError("Prefect API down")
+
+    with raises(RuntimeError), rana_context:
+        pass
+
+    report = process_time_gateway.return_value.report
+    assert report.call_args_list[-1].args[0] is ProcessTimeOutcome.FAILED
+
+
+def test_context_manager_process_time_report_base_exception_does_not_fail_the_run(
+    rana_context: PrefectRanaContext,
+    process_time_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    process_time_gateway.return_value.report.side_effect = CancelledError()
+
+    with rana_context:
+        pass
+
+    prefect_rana_runtime.set_progress.assert_called_once_with(100, "Completed", True)
+
+
+def test_context_manager_failed_process_time_report_does_not_fail_the_run(
+    rana_context: PrefectRanaContext,
+    process_time_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    process_time_gateway.return_value.report.side_effect = RuntimeError("Rana API down")
+
+    with rana_context:
+        pass
+
+    prefect_rana_runtime.set_progress.assert_called_once_with(100, "Completed", True)
