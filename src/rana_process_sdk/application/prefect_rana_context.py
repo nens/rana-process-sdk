@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Generic, TypeVar
 from uuid import UUID
 
-from pydantic import SecretStr
+from pydantic import PrivateAttr, SecretStr
 from threedi_api_client.files import download_file, upload_file
 
 from ..domain import (
@@ -48,21 +48,19 @@ STOP_TIMEOUT_SECONDS = 5
 
 @dataclass
 class _ProcessTimeRun:
-    """State of the process time heartbeat of one run."""
+    """Process time heartbeat state of one entry into the context."""
 
-    started_at: float = 0.0
+    started_at: float = field(default_factory=time.monotonic)
     stop_event: threading.Event = field(default_factory=threading.Event)
     thread: threading.Thread | None = None
 
 
 class PrefectRanaContext(RanaContext[T], Generic[T]):
+    _process_time_run: _ProcessTimeRun = PrivateAttr(default_factory=_ProcessTimeRun)
+
     @cached_property
     def _rana_runtime(self) -> PrefectRanaRuntime:
         return PrefectRanaRuntime()
-
-    @cached_property
-    def _process_time_run(self) -> _ProcessTimeRun:
-        return _ProcessTimeRun()
 
     @property
     def job_id(self) -> UUID:
@@ -193,10 +191,7 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
             self._report_process_time(run, ProcessTimeOutcome.RUNNING)
 
     def _start_process_time_heartbeat(self) -> None:
-        # Each entry starts with fresh run state, so a context entered again gets its own heartbeat.
-        self.__dict__.pop("_process_time_run", None)
         run = self._process_time_run
-        run.started_at = time.monotonic()
         try:
             thread = threading.Thread(
                 target=self._process_time_heartbeat, args=(run,), daemon=True
@@ -224,6 +219,8 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
     def __enter__(self) -> None:
         self._rana_runtime.create_progress()
         self.job_working_dir.mkdir(mode=0o0700, exist_ok=True)
+        # Fresh state per entry, so a context entered again heartbeats with its own run.
+        self._process_time_run = _ProcessTimeRun()
         self._start_process_time_heartbeat()
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:  # type: ignore
