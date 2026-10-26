@@ -1,10 +1,13 @@
 import shutil
+import threading
+import time
+from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
 from typing import Generic, TypeVar
 from uuid import UUID
 
-from pydantic import PrivateAttr, SecretStr
+from pydantic import SecretStr
 from threedi_api_client.files import download_file, upload_file
 
 from ..domain import (
@@ -22,6 +25,7 @@ from ..infrastructure import (
     LizardRasterLayerGateway,
     PrefectRanaRuntime,
     PrefectRanaSchematisationGateway,
+    ProcessTimeOutcome,
     RanaDatasetGateway,
     RanaFileGateway,
     RanaProcessTimeGateway,
@@ -29,7 +33,6 @@ from ..infrastructure import (
     SentryBlock,
     ThreediApiKeyGateway,
 )
-from .process_time_reporter import ProcessTimeReporter
 from .rana_context import RanaContext, transfer_extension
 from .schematisation import upload_schematisation
 from .types import RanaPath
@@ -38,13 +41,28 @@ __all__ = ["PrefectRanaContext"]
 
 T = TypeVar("T", bound=RanaProcessParameters)
 
+HEARTBEAT_INTERVAL_SECONDS = 60
+# Upper bound for waiting on an in-flight heartbeat when the job ends. The final report is sent regardless.
+STOP_TIMEOUT_SECONDS = 5
+
+
+@dataclass
+class _ProcessTimeRun:
+    """State of the process time heartbeat of one run."""
+
+    started_at: float = 0.0
+    stop_event: threading.Event = field(default_factory=threading.Event)
+    thread: threading.Thread | None = None
+
 
 class PrefectRanaContext(RanaContext[T], Generic[T]):
-    _process_time_reporter: ProcessTimeReporter | None = PrivateAttr(default=None)
-
     @cached_property
     def _rana_runtime(self) -> PrefectRanaRuntime:
         return PrefectRanaRuntime()
+
+    @cached_property
+    def _process_time_run(self) -> _ProcessTimeRun:
+        return _ProcessTimeRun()
 
     @property
     def job_id(self) -> UUID:
@@ -158,13 +176,55 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
         )
         return RanaPath(id=file_upload.id, ref=file_upload.ref)
 
+    def _report_process_time(
+        self, run: _ProcessTimeRun, outcome: ProcessTimeOutcome
+    ) -> None:
+        try:
+            elapsed_seconds = int(time.monotonic() - run.started_at)
+            self._process_time_gateway.report(outcome, elapsed_seconds)
+        except BaseException:
+            # BaseException too: a cancellation or interrupt during the report must not fail the run.
+            self._rana_runtime.logger.warning(
+                "Could not report process time (%s)", outcome.value, exc_info=True
+            )
+
+    def _process_time_heartbeat(self, run: _ProcessTimeRun) -> None:
+        while not run.stop_event.wait(HEARTBEAT_INTERVAL_SECONDS):
+            self._report_process_time(run, ProcessTimeOutcome.RUNNING)
+
+    def _start_process_time_heartbeat(self) -> None:
+        # Each entry starts with fresh run state, so a context entered again gets its own heartbeat.
+        self.__dict__.pop("_process_time_run", None)
+        run = self._process_time_run
+        run.started_at = time.monotonic()
+        try:
+            thread = threading.Thread(
+                target=self._process_time_heartbeat, args=(run,), daemon=True
+            )
+            thread.start()
+        except Exception:
+            # Without a heartbeat the final report is still sent, so the run goes on.
+            self._rana_runtime.logger.warning(
+                "Could not start process time heartbeat", exc_info=True
+            )
+        else:
+            run.thread = thread
+
+    def _stop_process_time_heartbeat(self, failed: bool) -> None:
+        run = self._process_time_run
+        run.stop_event.set()
+        if run.thread is not None:
+            # A heartbeat in flight may be retrying; do not hold up the end of the run for it.
+            # The backend rejects a running report after the final one, so a late heartbeat is harmless.
+            run.thread.join(STOP_TIMEOUT_SECONDS)
+        self._report_process_time(
+            run, ProcessTimeOutcome.FAILED if failed else ProcessTimeOutcome.SUCCEEDED
+        )
+
     def __enter__(self) -> None:
         self._rana_runtime.create_progress()
         self.job_working_dir.mkdir(mode=0o0700, exist_ok=True)
-        self._process_time_reporter = ProcessTimeReporter(
-            self._process_time_gateway, logger=self._rana_runtime.logger
-        )
-        self._process_time_reporter.start()
+        self._start_process_time_heartbeat()
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:  # type: ignore
         # Report the final process time before Prefect sets the final state of the run.
@@ -180,8 +240,7 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
             failed = True
             raise
         finally:
-            if self._process_time_reporter is not None:
-                self._process_time_reporter.stop(failed=failed)
+            self._stop_process_time_heartbeat(failed=failed)
 
     def setup_logger(self) -> None:
         try:

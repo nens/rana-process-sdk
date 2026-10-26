@@ -1,6 +1,8 @@
 from asyncio import CancelledError
 from collections.abc import Iterator
 from pathlib import Path
+from threading import Event, Thread
+from time import monotonic, sleep
 from unittest.mock import Mock, PropertyMock, patch
 from uuid import UUID
 
@@ -816,3 +818,118 @@ def test_context_manager_failed_process_time_report_does_not_fail_the_run(
         pass
 
     prefect_rana_runtime.set_progress.assert_called_once_with(100, "Completed", True)
+
+
+def test_context_manager_heartbeat_reports_running_until_exit(
+    rana_context: PrefectRanaContext,
+    process_time_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    report = process_time_gateway.return_value.report
+    with patch(f"{MODULE}.HEARTBEAT_INTERVAL_SECONDS", 0.01), rana_context:
+        deadline = monotonic() + 5
+        while report.call_count < 2 and monotonic() < deadline:
+            sleep(0.001)
+    assert report.call_count >= 2
+
+    calls = report.call_args_list
+    assert all(call.args[0] is ProcessTimeOutcome.RUNNING for call in calls[:-1])
+    assert calls[-1].args[0] is ProcessTimeOutcome.SUCCEEDED
+    # No heartbeat after the final report
+    count = report.call_count
+    sleep(0.05)
+    assert report.call_count == count
+
+
+def test_context_manager_heartbeat_start_failure_does_not_fail_the_run(
+    rana_context: PrefectRanaContext,
+    process_time_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    with patch.object(
+        Thread, "start", side_effect=RuntimeError("can't start new thread")
+    ):
+        with rana_context:
+            pass
+
+    prefect_rana_runtime.logger.warning.assert_called_once()
+    report = process_time_gateway.return_value.report
+    report.assert_called_once_with(ProcessTimeOutcome.SUCCEEDED, 0)
+
+
+def test_context_manager_process_time_report_failure_is_logged(
+    rana_context: PrefectRanaContext,
+    process_time_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    process_time_gateway.return_value.report.side_effect = RuntimeError("Rana API down")
+
+    with raises(ValueError), rana_context:
+        raise ValueError("boom")
+
+    logger = prefect_rana_runtime.logger
+    logger.warning.assert_called_once()
+    assert logger.warning.call_args.args[1] == "failed"
+    assert logger.warning.call_args.kwargs == {"exc_info": True}
+
+
+def test_context_manager_exit_does_not_wait_for_a_hanging_heartbeat(
+    rana_context: PrefectRanaContext,
+    process_time_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    heartbeat_started = Event()
+    release = Event()
+    report = process_time_gateway.return_value.report
+
+    def hanging_report(outcome: ProcessTimeOutcome, elapsed_seconds: int) -> None:
+        if outcome is ProcessTimeOutcome.RUNNING:
+            heartbeat_started.set()
+            release.wait()
+
+    report.side_effect = hanging_report
+    with (
+        patch(f"{MODULE}.HEARTBEAT_INTERVAL_SECONDS", 0.01),
+        patch(f"{MODULE}.STOP_TIMEOUT_SECONDS", 0.05),
+    ):
+        with rana_context:
+            assert heartbeat_started.wait(5)
+            started = monotonic()
+        assert monotonic() - started < 2
+
+    release.set()
+    assert report.call_args.args[0] is ProcessTimeOutcome.SUCCEEDED
+
+
+def test_context_manager_reentered_context_heartbeats_again(
+    rana_context: PrefectRanaContext,
+    process_time_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    report = process_time_gateway.return_value.report
+    with patch(f"{MODULE}.HEARTBEAT_INTERVAL_SECONDS", 0.01):
+        with rana_context:
+            pass
+        first_run_calls = report.call_count
+
+        with rana_context:
+            deadline = monotonic() + 5
+            while report.call_count < first_run_calls + 2 and monotonic() < deadline:
+                sleep(0.001)
+
+    second_run = report.call_args_list[first_run_calls:]
+    assert [call.args[0] for call in second_run[:2]] == [
+        ProcessTimeOutcome.RUNNING,
+        ProcessTimeOutcome.RUNNING,
+    ]
+    assert second_run[-1].args[0] is ProcessTimeOutcome.SUCCEEDED
