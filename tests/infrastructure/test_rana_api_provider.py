@@ -76,6 +76,7 @@ def test_job_request(
         params={"param": "value"},
         json={"json": "value"},
         headers={"header": "value"},
+        timeout=5.0,
     )
     _get_headers.assert_called_once_with(runtime)
     _get_job_path.assert_called_once_with(runtime)

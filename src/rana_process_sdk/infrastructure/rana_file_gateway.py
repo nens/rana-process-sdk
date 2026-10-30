@@ -7,6 +7,9 @@ from ..domain import DoesNotExist, FileStat, FileUpload, Json
 from .api_exception import ApiException
 from .rana_api_provider import PrefectRanaApiProvider
 
+# Completing an upload merges into LakeFS and can outlast the default 5 s timeout
+UPLOAD_COMPLETE_TIMEOUT = 30
+
 
 class RanaFileGateway:
     ls_subpath = "files/ls"
@@ -74,6 +77,8 @@ class RanaFileGateway:
             body["descriptor"]["description"] = description
         if meta:
             body["descriptor"]["meta"] = meta
-        response = self.provider.job_request("PUT", self.upload_subpath, json=body)
+        response = self.provider.job_request(
+            "PUT", self.upload_subpath, json=body, timeout=UPLOAD_COMPLETE_TIMEOUT
+        )
         assert response is not None
         return FileUpload(**response)

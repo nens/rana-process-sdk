@@ -4,7 +4,7 @@
 ## 0.21 (unreleased)
 
 
-- Nothing changed yet.
+- Increase the timeout of completing a file upload from 5 s to 30 s.
 
 
 ## 0.20 (2026-10-06)
