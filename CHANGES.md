@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.21 (unreleased)
+## 0.21 (2026-10-30)
 
 
 - Increase the timeout of completing a file upload from 5 s to 30 s.
