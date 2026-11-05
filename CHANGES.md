@@ -1,11 +1,17 @@
 # Changelog of rana-process-sdk
 
 
-## 0.21 (unreleased)
+## 0.22 (unreleased)
 
 
 - Support reporting process time to Rana. Add a heartbeat every 60 seconds while the process is running,
   Also a final succeeded or failed outcome before the run ends. Reporting failures are logged and never fail the process.
+
+
+## 0.21 (2026-10-30)
+
+
+- Increase the timeout of completing a file upload from 5 s to 30 s.
 
 
 ## 0.20 (2026-10-06)

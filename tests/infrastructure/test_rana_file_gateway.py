@@ -71,7 +71,7 @@ def test_upload_complete(
     assert actual == FileUpload(**provider.job_request.return_value)
 
     provider.job_request.assert_called_once_with(
-        "PUT", "files/upload", json={"foo": "bar", **expected}
+        "PUT", "files/upload", json={"foo": "bar", **expected}, timeout=30
     )
 
 

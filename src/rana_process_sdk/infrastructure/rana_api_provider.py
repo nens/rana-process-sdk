@@ -29,6 +29,7 @@ class RanaApiProvider(ApiProvider):
         path: str,
         params: Json | None = None,
         json: Json | None = None,
+        timeout: float = 5.0,
     ) -> Json | None:
         pass
 
@@ -46,6 +47,7 @@ class PrefectRanaApiProvider(RanaApiProvider):
         path: str,
         params: Json | None = None,
         json: Json | None = None,
+        timeout: float = 5.0,
     ) -> Json | None:
         path = _get_job_path(self.rana_runtime) + (
             path if path.startswith("/") else "/" + path
@@ -56,6 +58,7 @@ class PrefectRanaApiProvider(RanaApiProvider):
             params=params,
             json=json,
             headers=_get_headers(self.rana_runtime),
+            timeout=timeout,
         )
 
 
@@ -71,5 +74,6 @@ class LocalTestRanaApiProvider(RanaApiProvider):
         path: str,
         params: Json | None = None,
         json: Json | None = None,
+        timeout: float = 5.0,
     ) -> Json | None:
         raise NotImplementedError("Do not use job request in local test runtime")
