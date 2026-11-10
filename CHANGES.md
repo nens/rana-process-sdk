@@ -4,7 +4,7 @@
 ## 0.22 (unreleased)
 
 
-- Nothing changed yet.
+- Support prefect >=3,<4 in pyproject.toml.
 
 
 ## 0.21 (2026-10-30)
