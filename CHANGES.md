@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.22 (unreleased)
+## 0.22 (2026-11-10)
 
 
 - Support prefect >=3,<4 in pyproject.toml.
