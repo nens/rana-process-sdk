@@ -9,7 +9,12 @@ from prefect.artifacts import (
     create_table_artifact,
     update_progress_artifact,
 )
-from prefect.context import EngineContext, SettingsContext
+from prefect.context import (
+    EngineContext,
+    FlowRunContext,
+    SettingsContext,
+    get_run_context,
+)
 from pydantic import SecretStr
 
 from ..domain import Json
@@ -81,3 +86,9 @@ class PrefectRanaRuntime(RanaRuntime):
             self.logger.info(description)
         assert self._progress_artifact_id is not None
         update_progress_artifact(self._progress_artifact_id, progress, description)
+
+    def get_job_name(self) -> str:
+        flow_run_context = get_run_context()
+        assert isinstance(flow_run_context, FlowRunContext)
+        assert flow_run_context.flow_run is not None
+        return flow_run_context.flow_run.name

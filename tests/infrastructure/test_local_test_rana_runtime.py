@@ -64,3 +64,10 @@ def test_runtime_with_threedi_api_key(
     assert runtime_with_key.threedi_api_key.organisations == [
         local_test_settings.threedi.organisation
     ]
+
+
+def test_runtime_get_job_name(runtime: LocalTestRanaRuntime):
+    job_name = runtime.get_job_name()
+
+    assert job_name.startswith("Local test job #")
+    assert len(job_name) == len("Local test job #") + 8
