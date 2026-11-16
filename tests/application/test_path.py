@@ -79,9 +79,6 @@ def test_file_schema(
             "variable_type": {
                 "const": "rana_path",
                 "default": "rana_path",
-                "enum": [
-                    "rana_path",
-                ],
                 "title": "Variable Type",
                 "type": "string",
             },

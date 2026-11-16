@@ -1,11 +1,17 @@
 # Changelog of rana-process-sdk
 
 
-## 0.22 (unreleased)
+## 0.23 (unreleased)
 
 
 - Support reporting process time to Rana. Add a heartbeat every 60 seconds while the process is running,
   Also a final succeeded or failed outcome before the run ends. Reporting failures are logged and never fail the process.
+
+
+## 0.22 (2026-11-10)
+
+
+- Support prefect >=3,<4 in pyproject.toml.
 
 
 ## 0.21 (2026-10-30)
