@@ -37,9 +37,9 @@ from rana_process_sdk.domain.dataset import (
 from rana_process_sdk.domain.lizard_raster import LizardRaster
 from rana_process_sdk.infrastructure import (
     SENTRY_BLOCK_NAME,
+    JobUsageStatus,
     LizardRasterLayerGateway,
     PrefectRanaRuntime,
-    ProcessTimeOutcome,
     RanaDatasetGateway,
     RanaFileGateway,
     RanaSchematisationGateway,
@@ -88,10 +88,10 @@ class MultipleFileOutput(RanaProcessParameters):
 
 
 @fixture(autouse=True)
-def process_time_gateway() -> Iterator[Mock]:
+def job_usage_gateway() -> Iterator[Mock]:
     with patch.object(
         PrefectRanaContext,
-        "_process_time_gateway",
+        "_job_usage_gateway",
         new_callable=PropertyMock,
     ) as m:
         yield m
@@ -732,9 +732,9 @@ def test_get_dataset(
     rana_dataset_gateway.get_data_links.assert_called_once_with("DatasetId")
 
 
-def test_context_manager_reports_process_time(
+def test_context_manager_reports_job_usage(
     rana_context: PrefectRanaContext,
-    process_time_gateway: Mock,
+    job_usage_gateway: Mock,
     prefect_rana_runtime: Mock,
     threedi_api_key_gateway: Mock,
     job_working_dir: Path,
@@ -742,13 +742,13 @@ def test_context_manager_reports_process_time(
     with rana_context:
         pass
 
-    report = process_time_gateway.return_value.report
-    assert report.call_args_list[-1].args[0] is ProcessTimeOutcome.SUCCEEDED
+    report = job_usage_gateway.return_value.report
+    assert report.call_args_list[-1].args[0] is JobUsageStatus.SUCCEEDED
 
 
-def test_context_manager_reports_failed_process_time(
+def test_context_manager_reports_failed_job_usage(
     rana_context: PrefectRanaContext,
-    process_time_gateway: Mock,
+    job_usage_gateway: Mock,
     prefect_rana_runtime: Mock,
     threedi_api_key_gateway: Mock,
     job_working_dir: Path,
@@ -756,13 +756,13 @@ def test_context_manager_reports_failed_process_time(
     with raises(ValueError), rana_context:
         raise ValueError("boom")
 
-    report = process_time_gateway.return_value.report
-    assert report.call_args_list[-1].args[0] is ProcessTimeOutcome.FAILED
+    report = job_usage_gateway.return_value.report
+    assert report.call_args_list[-1].args[0] is JobUsageStatus.FAILED
 
 
-def test_context_manager_reports_cancelled_process_time_as_failed(
+def test_context_manager_reports_cancelled_job_usage_as_failed(
     rana_context: PrefectRanaContext,
-    process_time_gateway: Mock,
+    job_usage_gateway: Mock,
     prefect_rana_runtime: Mock,
     threedi_api_key_gateway: Mock,
     job_working_dir: Path,
@@ -770,13 +770,13 @@ def test_context_manager_reports_cancelled_process_time_as_failed(
     with raises(CancelledError), rana_context:
         raise CancelledError()
 
-    report = process_time_gateway.return_value.report
-    assert report.call_args_list[-1].args[0] is ProcessTimeOutcome.FAILED
+    report = job_usage_gateway.return_value.report
+    assert report.call_args_list[-1].args[0] is JobUsageStatus.FAILED
 
 
-def test_context_manager_cleanup_error_reports_failed_process_time(
+def test_context_manager_cleanup_error_reports_failed_job_usage(
     rana_context: PrefectRanaContext,
-    process_time_gateway: Mock,
+    job_usage_gateway: Mock,
     prefect_rana_runtime: Mock,
     threedi_api_key_gateway: Mock,
     job_working_dir: Path,
@@ -786,18 +786,18 @@ def test_context_manager_cleanup_error_reports_failed_process_time(
     with raises(RuntimeError), rana_context:
         pass
 
-    report = process_time_gateway.return_value.report
-    assert report.call_args_list[-1].args[0] is ProcessTimeOutcome.FAILED
+    report = job_usage_gateway.return_value.report
+    assert report.call_args_list[-1].args[0] is JobUsageStatus.FAILED
 
 
-def test_context_manager_process_time_report_base_exception_does_not_fail_the_run(
+def test_context_manager_job_usage_report_base_exception_does_not_fail_the_run(
     rana_context: PrefectRanaContext,
-    process_time_gateway: Mock,
+    job_usage_gateway: Mock,
     prefect_rana_runtime: Mock,
     threedi_api_key_gateway: Mock,
     job_working_dir: Path,
 ):
-    process_time_gateway.return_value.report.side_effect = CancelledError()
+    job_usage_gateway.return_value.report.side_effect = CancelledError()
 
     with rana_context:
         pass
@@ -805,14 +805,14 @@ def test_context_manager_process_time_report_base_exception_does_not_fail_the_ru
     prefect_rana_runtime.set_progress.assert_called_once_with(100, "Completed", True)
 
 
-def test_context_manager_failed_process_time_report_does_not_fail_the_run(
+def test_context_manager_failed_job_usage_report_does_not_fail_the_run(
     rana_context: PrefectRanaContext,
-    process_time_gateway: Mock,
+    job_usage_gateway: Mock,
     prefect_rana_runtime: Mock,
     threedi_api_key_gateway: Mock,
     job_working_dir: Path,
 ):
-    process_time_gateway.return_value.report.side_effect = RuntimeError("Rana API down")
+    job_usage_gateway.return_value.report.side_effect = RuntimeError("Rana API down")
 
     with rana_context:
         pass
@@ -822,12 +822,12 @@ def test_context_manager_failed_process_time_report_does_not_fail_the_run(
 
 def test_context_manager_heartbeat_reports_running_until_exit(
     rana_context: PrefectRanaContext,
-    process_time_gateway: Mock,
+    job_usage_gateway: Mock,
     prefect_rana_runtime: Mock,
     threedi_api_key_gateway: Mock,
     job_working_dir: Path,
 ):
-    report = process_time_gateway.return_value.report
+    report = job_usage_gateway.return_value.report
     with patch(f"{MODULE}.HEARTBEAT_INTERVAL_SECONDS", 0.01), rana_context:
         deadline = monotonic() + 5
         while report.call_count < 2 and monotonic() < deadline:
@@ -835,8 +835,8 @@ def test_context_manager_heartbeat_reports_running_until_exit(
     assert report.call_count >= 2
 
     calls = report.call_args_list
-    assert all(call.args[0] is ProcessTimeOutcome.RUNNING for call in calls[:-1])
-    assert calls[-1].args[0] is ProcessTimeOutcome.SUCCEEDED
+    assert all(call.args[0] is JobUsageStatus.RUNNING for call in calls[:-1])
+    assert calls[-1].args[0] is JobUsageStatus.SUCCEEDED
     # No heartbeat after the final report
     count = report.call_count
     sleep(0.05)
@@ -845,7 +845,7 @@ def test_context_manager_heartbeat_reports_running_until_exit(
 
 def test_context_manager_heartbeat_start_failure_does_not_fail_the_run(
     rana_context: PrefectRanaContext,
-    process_time_gateway: Mock,
+    job_usage_gateway: Mock,
     prefect_rana_runtime: Mock,
     threedi_api_key_gateway: Mock,
     job_working_dir: Path,
@@ -857,18 +857,18 @@ def test_context_manager_heartbeat_start_failure_does_not_fail_the_run(
             pass
 
     prefect_rana_runtime.logger.warning.assert_called_once()
-    report = process_time_gateway.return_value.report
-    report.assert_called_once_with(ProcessTimeOutcome.SUCCEEDED, 0)
+    report = job_usage_gateway.return_value.report
+    report.assert_called_once_with(JobUsageStatus.SUCCEEDED, 0)
 
 
-def test_context_manager_process_time_report_failure_is_logged(
+def test_context_manager_job_usage_report_failure_is_logged(
     rana_context: PrefectRanaContext,
-    process_time_gateway: Mock,
+    job_usage_gateway: Mock,
     prefect_rana_runtime: Mock,
     threedi_api_key_gateway: Mock,
     job_working_dir: Path,
 ):
-    process_time_gateway.return_value.report.side_effect = RuntimeError("Rana API down")
+    job_usage_gateway.return_value.report.side_effect = RuntimeError("Rana API down")
 
     with raises(ValueError), rana_context:
         raise ValueError("boom")
@@ -881,17 +881,17 @@ def test_context_manager_process_time_report_failure_is_logged(
 
 def test_context_manager_exit_does_not_wait_for_a_hanging_heartbeat(
     rana_context: PrefectRanaContext,
-    process_time_gateway: Mock,
+    job_usage_gateway: Mock,
     prefect_rana_runtime: Mock,
     threedi_api_key_gateway: Mock,
     job_working_dir: Path,
 ):
     heartbeat_started = Event()
     release = Event()
-    report = process_time_gateway.return_value.report
+    report = job_usage_gateway.return_value.report
 
-    def hanging_report(outcome: ProcessTimeOutcome, elapsed_seconds: int) -> None:
-        if outcome is ProcessTimeOutcome.RUNNING:
+    def hanging_report(outcome: JobUsageStatus, elapsed_seconds: int) -> None:
+        if outcome is JobUsageStatus.RUNNING:
             heartbeat_started.set()
             release.wait()
 
@@ -906,17 +906,17 @@ def test_context_manager_exit_does_not_wait_for_a_hanging_heartbeat(
         assert monotonic() - started < 2
 
     release.set()
-    assert report.call_args.args[0] is ProcessTimeOutcome.SUCCEEDED
+    assert report.call_args.args[0] is JobUsageStatus.SUCCEEDED
 
 
 def test_context_manager_reentered_context_heartbeats_again(
     rana_context: PrefectRanaContext,
-    process_time_gateway: Mock,
+    job_usage_gateway: Mock,
     prefect_rana_runtime: Mock,
     threedi_api_key_gateway: Mock,
     job_working_dir: Path,
 ):
-    report = process_time_gateway.return_value.report
+    report = job_usage_gateway.return_value.report
     with patch(f"{MODULE}.HEARTBEAT_INTERVAL_SECONDS", 0.01):
         with rana_context:
             pass
@@ -929,7 +929,7 @@ def test_context_manager_reentered_context_heartbeats_again(
 
     second_run = report.call_args_list[first_run_calls:]
     assert [call.args[0] for call in second_run[:2]] == [
-        ProcessTimeOutcome.RUNNING,
-        ProcessTimeOutcome.RUNNING,
+        JobUsageStatus.RUNNING,
+        JobUsageStatus.RUNNING,
     ]
-    assert second_run[-1].args[0] is ProcessTimeOutcome.SUCCEEDED
+    assert second_run[-1].args[0] is JobUsageStatus.SUCCEEDED

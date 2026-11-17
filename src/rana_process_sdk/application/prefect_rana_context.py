@@ -22,13 +22,13 @@ from ..domain import (
 )
 from ..infrastructure import (
     SENTRY_BLOCK_NAME,
+    JobUsageStatus,
     LizardRasterLayerGateway,
     PrefectRanaRuntime,
     PrefectRanaSchematisationGateway,
-    ProcessTimeOutcome,
     RanaDatasetGateway,
     RanaFileGateway,
-    RanaProcessTimeGateway,
+    RanaJobUsageGateway,
     RanaSchematisationGateway,
     SentryBlock,
     ThreediApiKeyGateway,
@@ -47,8 +47,8 @@ STOP_TIMEOUT_SECONDS = 5
 
 
 @dataclass
-class _ProcessTimeRun:
-    """Process time heartbeat state of one entry into the context."""
+class _JobUsageRun:
+    """Job usage heartbeat state of one entry into the context."""
 
     started_at: float = field(default_factory=time.monotonic)
     stop_event: threading.Event = field(default_factory=threading.Event)
@@ -56,7 +56,7 @@ class _ProcessTimeRun:
 
 
 class PrefectRanaContext(RanaContext[T], Generic[T]):
-    _process_time_run: _ProcessTimeRun = PrivateAttr(default_factory=_ProcessTimeRun)
+    _job_usage_run: _JobUsageRun = PrivateAttr(default_factory=_JobUsageRun)
 
     @cached_property
     def _rana_runtime(self) -> PrefectRanaRuntime:
@@ -87,8 +87,8 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
         return RanaDatasetGateway()
 
     @property
-    def _process_time_gateway(self) -> RanaProcessTimeGateway:
-        return RanaProcessTimeGateway()
+    def _job_usage_gateway(self) -> RanaJobUsageGateway:
+        return RanaJobUsageGateway()
 
     @property
     def _threedi_api_key_gateway(self) -> ThreediApiKeyGateway:
@@ -174,57 +174,55 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
         )
         return RanaPath(id=file_upload.id, ref=file_upload.ref)
 
-    def _report_process_time(
-        self, run: _ProcessTimeRun, outcome: ProcessTimeOutcome
-    ) -> None:
+    def _report_job_usage(self, run: _JobUsageRun, outcome: JobUsageStatus) -> None:
         try:
             elapsed_seconds = int(time.monotonic() - run.started_at)
-            self._process_time_gateway.report(outcome, elapsed_seconds)
+            self._job_usage_gateway.report(outcome, elapsed_seconds)
         except BaseException:
             # BaseException too: a cancellation or interrupt during the report must not fail the run.
             self._rana_runtime.logger.warning(
-                "Could not report process time (%s)", outcome.value, exc_info=True
+                "Could not report job usage (%s)", outcome.value, exc_info=True
             )
 
-    def _process_time_heartbeat(self, run: _ProcessTimeRun) -> None:
+    def _job_usage_heartbeat(self, run: _JobUsageRun) -> None:
         while not run.stop_event.wait(HEARTBEAT_INTERVAL_SECONDS):
-            self._report_process_time(run, ProcessTimeOutcome.RUNNING)
+            self._report_job_usage(run, JobUsageStatus.RUNNING)
 
-    def _start_process_time_heartbeat(self) -> None:
-        run = self._process_time_run
+    def _start_job_usage_heartbeat(self) -> None:
+        run = self._job_usage_run
         try:
             thread = threading.Thread(
-                target=self._process_time_heartbeat, args=(run,), daemon=True
+                target=self._job_usage_heartbeat, args=(run,), daemon=True
             )
             thread.start()
         except Exception:
             # Without a heartbeat the final report is still sent, so the run goes on.
             self._rana_runtime.logger.warning(
-                "Could not start process time heartbeat", exc_info=True
+                "Could not start job usage heartbeat", exc_info=True
             )
         else:
             run.thread = thread
 
-    def _stop_process_time_heartbeat(self, failed: bool) -> None:
-        run = self._process_time_run
+    def _stop_job_usage_heartbeat(self, failed: bool) -> None:
+        run = self._job_usage_run
         run.stop_event.set()
         if run.thread is not None:
             # A heartbeat in flight may be retrying; do not hold up the end of the run for it.
             # The backend rejects a running report after the final one, so a late heartbeat is harmless.
             run.thread.join(STOP_TIMEOUT_SECONDS)
-        self._report_process_time(
-            run, ProcessTimeOutcome.FAILED if failed else ProcessTimeOutcome.SUCCEEDED
+        self._report_job_usage(
+            run, JobUsageStatus.FAILED if failed else JobUsageStatus.SUCCEEDED
         )
 
     def __enter__(self) -> None:
         self._rana_runtime.create_progress()
         self.job_working_dir.mkdir(mode=0o0700, exist_ok=True)
         # Fresh state per entry, so a context entered again heartbeats with its own run.
-        self._process_time_run = _ProcessTimeRun()
-        self._start_process_time_heartbeat()
+        self._job_usage_run = _JobUsageRun()
+        self._start_job_usage_heartbeat()
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:  # type: ignore
-        # Report the final process time before Prefect sets the final state of the run.
+        # Report the final job usage before Prefect sets the final state of the run.
         # The run fails when the body raises or when the cleanup below raises, so it is reported as failed too.
         failed = exc_type is not None
         try:
@@ -237,7 +235,7 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
             failed = True
             raise
         finally:
-            self._stop_process_time_heartbeat(failed=failed)
+            self._stop_job_usage_heartbeat(failed=failed)
 
     def setup_logger(self) -> None:
         try:
