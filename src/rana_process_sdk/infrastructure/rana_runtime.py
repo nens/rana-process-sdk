@@ -15,6 +15,7 @@ T = TypeVar("T", bound=BaseModel)
 
 class RanaRuntime(ABC):
     threedi_api_key: ThreediApiKey | None
+    _current_progress: int = 0
 
     def __init__(self) -> None:
         # PrefectContext is the only place to store variables in the context
@@ -67,8 +68,11 @@ class RanaRuntime(ABC):
         pass
 
     @abstractmethod
-    def set_progress(self, progress: float, description: str, log: bool) -> None:
-        pass
+    def set_progress(self, progress: int, description: str, log: bool) -> None:
+        self._current_progress = progress
+
+    def get_progress(self) -> int:
+        return self._current_progress
 
     @abstractmethod
     def set_result(self, result: Json) -> None:
