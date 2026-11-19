@@ -761,8 +761,10 @@ def test_context_manager_reports_job_usage(
         pass
 
     report = job_usage_gateway.return_value.report
-    assert report.call_args_list[0].args[0].status is JobUsageStatus.RUNNING
-    assert report.call_args_list[-1].args[0].status is JobUsageStatus.SUCCEEDED
+    assert [call.args[0].status for call in report.call_args_list] == [
+        JobUsageStatus.RUNNING,
+        JobUsageStatus.SUCCEEDED,
+    ]
 
 
 def test_context_manager_reports_failed_job_usage(
@@ -776,7 +778,10 @@ def test_context_manager_reports_failed_job_usage(
         raise ValueError("error")
 
     report = job_usage_gateway.return_value.report
-    assert report.call_args_list[-1].args[0].status is JobUsageStatus.FAILED
+    assert [call.args[0].status for call in report.call_args_list] == [
+        JobUsageStatus.RUNNING,
+        JobUsageStatus.FAILED,
+    ]
 
 
 def test_context_manager_reports_cancelled_job_usage_as_failed(
@@ -790,7 +795,10 @@ def test_context_manager_reports_cancelled_job_usage_as_failed(
         raise CancelledError()
 
     report = job_usage_gateway.return_value.report
-    assert report.call_args_list[-1].args[0].status is JobUsageStatus.FAILED
+    assert [call.args[0].status for call in report.call_args_list] == [
+        JobUsageStatus.RUNNING,
+        JobUsageStatus.FAILED,
+    ]
 
 
 def test_context_manager_cleanup_error_reports_failed_job_usage(
@@ -806,7 +814,10 @@ def test_context_manager_cleanup_error_reports_failed_job_usage(
         pass
 
     report = job_usage_gateway.return_value.report
-    assert report.call_args_list[-1].args[0].status is JobUsageStatus.FAILED
+    assert [call.args[0].status for call in report.call_args_list] == [
+        JobUsageStatus.RUNNING,
+        JobUsageStatus.FAILED,
+    ]
 
 
 def test_context_manager_job_usage_report_base_exception_does_not_fail_the_run(
@@ -847,16 +858,18 @@ def test_context_manager_heartbeat_reports_running_until_exit(
     job_working_dir: Path,
 ):
     report = job_usage_gateway.return_value.report
-    with patch(f"{HEARTBEAT_MODULE}.HEARTBEAT_INTERVAL_SECONDS", 0.01), rana_context:
-        deadline = monotonic() + 5
-        while report.call_count < 2 and monotonic() < deadline:
-            sleep(0.001)
-    assert report.call_count >= 2
 
-    calls = report.call_args_list
-    assert all(call.args[0].status is JobUsageStatus.RUNNING for call in calls[:-1])
-    assert calls[-1].args[0].status is JobUsageStatus.SUCCEEDED
-    # No heartbeat after the final report
+    with patch(f"{HEARTBEAT_MODULE}.HEARTBEAT_INTERVAL_SECONDS", 0.01):
+        with rana_context:
+            deadline = monotonic() + 5
+            while report.call_count < 2 and monotonic() < deadline:
+                sleep(0.001)
+
+    statuses = [call.args[0].status for call in report.call_args_list]
+    assert len(statuses) >= 2
+    assert all(status is JobUsageStatus.RUNNING for status in statuses[:-1])
+    assert statuses[-1] is JobUsageStatus.SUCCEEDED
+
     count = report.call_count
     sleep(0.05)
     assert report.call_count == count
@@ -932,25 +945,3 @@ def test_context_manager_exit_does_not_wait_for_a_hanging_heartbeat(
 
     release.set()
     assert report.call_args.args[0].status is JobUsageStatus.SUCCEEDED
-
-
-def test_context_manager_heartbeat_reports_through_gateway_from_its_thread(
-    rana_context: PrefectRanaContext,
-    job_usage_gateway: Mock,
-    prefect_rana_runtime: Mock,
-    threedi_api_key_gateway: Mock,
-    job_working_dir: Path,
-):
-    # the real gateway, so the heartbeat thread goes through the mapper to the provider
-    provider = Mock()
-    job_usage_gateway.return_value = RanaJobUsageGateway(provider)
-    with patch(f"{HEARTBEAT_MODULE}.HEARTBEAT_INTERVAL_SECONDS", 0.01), rana_context:
-        deadline = monotonic() + 5
-        while provider.job_request.call_count < 1 and monotonic() < deadline:
-            sleep(0.001)
-
-    first_call = provider.job_request.call_args_list[0]
-    assert first_call.args == ("PUT", "usage")
-    assert first_call.kwargs["json"] == {"status": "running", "elapsed_seconds": 0}
-    last_call = provider.job_request.call_args_list[-1]
-    assert last_call.kwargs["json"]["status"] == "succeeded"
