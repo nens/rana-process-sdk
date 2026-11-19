@@ -1,29 +1,27 @@
-from enum import Enum
+from clean_python import Mapper
 
+from ..domain import JobUsageReport, Json
 from .rana_api_provider import PrefectRanaApiProvider
 
-__all__ = ["JobUsageStatus", "RanaJobUsageGateway"]
+__all__ = ["RanaJobUsageGateway"]
 
 
-class JobUsageStatus(str, Enum):
-    RUNNING = "running"
-    SUCCEEDED = "succeeded"
-    FAILED = "failed"
+class JobUsageMapper(Mapper):
+    def to_external(self, internal: Json) -> Json:
+        return {
+            "status": internal["status"],
+            "elapsed_seconds": internal["elapsed_seconds"],
+        }
 
 
 class RanaJobUsageGateway:
+    mapper = JobUsageMapper()
     subpath = "usage"
 
     def __init__(self, provider_override: PrefectRanaApiProvider | None = None):
-        self.provider_override = provider_override
+        self.provider = provider_override or PrefectRanaApiProvider()
 
-    @property
-    def provider(self) -> PrefectRanaApiProvider:
-        return self.provider_override or PrefectRanaApiProvider()
-
-    def report(self, outcome: JobUsageStatus, elapsed_seconds: int) -> None:
+    def report(self, report: JobUsageReport) -> None:
         self.provider.job_request(
-            "PUT",
-            self.subpath,
-            json={"status": outcome.value, "elapsed_seconds": elapsed_seconds},
+            "PUT", self.subpath, json=self.mapper.to_external(report.model_dump())
         )

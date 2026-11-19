@@ -23,6 +23,8 @@ from rana_process_sdk.domain import (
     FileStat,
     FileUpload,
     History,
+    JobUsageReport,
+    JobUsageStatus,
     ProcessUserError,
     ThreediApiKey,
 )
@@ -37,17 +39,18 @@ from rana_process_sdk.domain.dataset import (
 from rana_process_sdk.domain.lizard_raster import LizardRaster
 from rana_process_sdk.infrastructure import (
     SENTRY_BLOCK_NAME,
-    JobUsageStatus,
     LizardRasterLayerGateway,
     PrefectRanaRuntime,
     RanaDatasetGateway,
     RanaFileGateway,
+    RanaJobUsageGateway,
     RanaSchematisationGateway,
     SentryBlock,
     ThreediApiKeyGateway,
 )
 
 MODULE = "rana_process_sdk.application.prefect_rana_context"
+HEARTBEAT_MODULE = "rana_process_sdk.application.job_usage_heartbeat"
 
 
 class Output(RanaProcessParameters):
@@ -89,11 +92,7 @@ class MultipleFileOutput(RanaProcessParameters):
 
 @fixture(autouse=True)
 def job_usage_gateway() -> Iterator[Mock]:
-    with patch.object(
-        PrefectRanaContext,
-        "_job_usage_gateway",
-        new_callable=PropertyMock,
-    ) as m:
+    with patch(f"{HEARTBEAT_MODULE}.RanaJobUsageGateway") as m:
         yield m
 
 
@@ -480,6 +479,25 @@ def test_context_manager_workdir_deleted(
         prefect_rana_runtime.job_working_dir.rmdir()
 
 
+def test_context_manager_workdir_creation_failure_does_not_start_heartbeat(
+    rana_context: PrefectRanaContext,
+    prefect_rana_runtime: PrefectRanaRuntime,
+    job_usage_gateway: Mock,
+    job_working_dir: Path,
+):
+    blocked = job_working_dir / "blocked"
+    blocked.touch()
+    prefect_rana_runtime.job_working_dir = blocked
+
+    with patch(f"{HEARTBEAT_MODULE}.threading.Thread") as thread_class:
+        with raises(FileExistsError):
+            with rana_context:
+                pass
+
+    thread_class.assert_not_called()
+    job_usage_gateway.return_value.report.assert_not_called()
+
+
 @fixture
 def threedi_api_key() -> ThreediApiKey:
     return ThreediApiKey(
@@ -743,7 +761,8 @@ def test_context_manager_reports_job_usage(
         pass
 
     report = job_usage_gateway.return_value.report
-    assert report.call_args_list[-1].args[0] is JobUsageStatus.SUCCEEDED
+    assert report.call_args_list[0].args[0].status is JobUsageStatus.RUNNING
+    assert report.call_args_list[-1].args[0].status is JobUsageStatus.SUCCEEDED
 
 
 def test_context_manager_reports_failed_job_usage(
@@ -754,10 +773,10 @@ def test_context_manager_reports_failed_job_usage(
     job_working_dir: Path,
 ):
     with raises(ValueError), rana_context:
-        raise ValueError("boom")
+        raise ValueError("error")
 
     report = job_usage_gateway.return_value.report
-    assert report.call_args_list[-1].args[0] is JobUsageStatus.FAILED
+    assert report.call_args_list[-1].args[0].status is JobUsageStatus.FAILED
 
 
 def test_context_manager_reports_cancelled_job_usage_as_failed(
@@ -771,7 +790,7 @@ def test_context_manager_reports_cancelled_job_usage_as_failed(
         raise CancelledError()
 
     report = job_usage_gateway.return_value.report
-    assert report.call_args_list[-1].args[0] is JobUsageStatus.FAILED
+    assert report.call_args_list[-1].args[0].status is JobUsageStatus.FAILED
 
 
 def test_context_manager_cleanup_error_reports_failed_job_usage(
@@ -787,7 +806,7 @@ def test_context_manager_cleanup_error_reports_failed_job_usage(
         pass
 
     report = job_usage_gateway.return_value.report
-    assert report.call_args_list[-1].args[0] is JobUsageStatus.FAILED
+    assert report.call_args_list[-1].args[0].status is JobUsageStatus.FAILED
 
 
 def test_context_manager_job_usage_report_base_exception_does_not_fail_the_run(
@@ -828,15 +847,15 @@ def test_context_manager_heartbeat_reports_running_until_exit(
     job_working_dir: Path,
 ):
     report = job_usage_gateway.return_value.report
-    with patch(f"{MODULE}.HEARTBEAT_INTERVAL_SECONDS", 0.01), rana_context:
+    with patch(f"{HEARTBEAT_MODULE}.HEARTBEAT_INTERVAL_SECONDS", 0.01), rana_context:
         deadline = monotonic() + 5
         while report.call_count < 2 and monotonic() < deadline:
             sleep(0.001)
     assert report.call_count >= 2
 
     calls = report.call_args_list
-    assert all(call.args[0] is JobUsageStatus.RUNNING for call in calls[:-1])
-    assert calls[-1].args[0] is JobUsageStatus.SUCCEEDED
+    assert all(call.args[0].status is JobUsageStatus.RUNNING for call in calls[:-1])
+    assert calls[-1].args[0].status is JobUsageStatus.SUCCEEDED
     # No heartbeat after the final report
     count = report.call_count
     sleep(0.05)
@@ -858,7 +877,9 @@ def test_context_manager_heartbeat_start_failure_does_not_fail_the_run(
 
     prefect_rana_runtime.logger.warning.assert_called_once()
     report = job_usage_gateway.return_value.report
-    report.assert_called_once_with(JobUsageStatus.SUCCEEDED, 0)
+    report.assert_called_once_with(
+        JobUsageReport(status=JobUsageStatus.SUCCEEDED, elapsed_seconds=0)
+    )
 
 
 def test_context_manager_job_usage_report_failure_is_logged(
@@ -873,9 +894,13 @@ def test_context_manager_job_usage_report_failure_is_logged(
     with raises(ValueError), rana_context:
         raise ValueError("boom")
 
+    # the heartbeat thread is joined on exit, so both reports have been attempted
     logger = prefect_rana_runtime.logger
-    logger.warning.assert_called_once()
-    assert logger.warning.call_args.args[1] == "failed"
+    assert logger.warning.call_count == 2
+    assert [call.args[1] for call in logger.warning.call_args_list] == [
+        "running",
+        "failed",
+    ]
     assert logger.warning.call_args.kwargs == {"exc_info": True}
 
 
@@ -890,15 +915,15 @@ def test_context_manager_exit_does_not_wait_for_a_hanging_heartbeat(
     release = Event()
     report = job_usage_gateway.return_value.report
 
-    def hanging_report(outcome: JobUsageStatus, elapsed_seconds: int) -> None:
-        if outcome is JobUsageStatus.RUNNING:
+    def hanging_report(report: JobUsageReport) -> None:
+        if report.status is JobUsageStatus.RUNNING:
             heartbeat_started.set()
             release.wait()
 
     report.side_effect = hanging_report
     with (
-        patch(f"{MODULE}.HEARTBEAT_INTERVAL_SECONDS", 0.01),
-        patch(f"{MODULE}.STOP_TIMEOUT_SECONDS", 0.05),
+        patch(f"{HEARTBEAT_MODULE}.HEARTBEAT_INTERVAL_SECONDS", 0.01),
+        patch(f"{HEARTBEAT_MODULE}.STOP_TIMEOUT_SECONDS", 0.05),
     ):
         with rana_context:
             assert heartbeat_started.wait(5)
@@ -906,30 +931,26 @@ def test_context_manager_exit_does_not_wait_for_a_hanging_heartbeat(
         assert monotonic() - started < 2
 
     release.set()
-    assert report.call_args.args[0] is JobUsageStatus.SUCCEEDED
+    assert report.call_args.args[0].status is JobUsageStatus.SUCCEEDED
 
 
-def test_context_manager_reentered_context_heartbeats_again(
+def test_context_manager_heartbeat_reports_through_gateway_from_its_thread(
     rana_context: PrefectRanaContext,
     job_usage_gateway: Mock,
     prefect_rana_runtime: Mock,
     threedi_api_key_gateway: Mock,
     job_working_dir: Path,
 ):
-    report = job_usage_gateway.return_value.report
-    with patch(f"{MODULE}.HEARTBEAT_INTERVAL_SECONDS", 0.01):
-        with rana_context:
-            pass
-        first_run_calls = report.call_count
+    # the real gateway, so the heartbeat thread goes through the mapper to the provider
+    provider = Mock()
+    job_usage_gateway.return_value = RanaJobUsageGateway(provider)
+    with patch(f"{HEARTBEAT_MODULE}.HEARTBEAT_INTERVAL_SECONDS", 0.01), rana_context:
+        deadline = monotonic() + 5
+        while provider.job_request.call_count < 1 and monotonic() < deadline:
+            sleep(0.001)
 
-        with rana_context:
-            deadline = monotonic() + 5
-            while report.call_count < first_run_calls + 2 and monotonic() < deadline:
-                sleep(0.001)
-
-    second_run = report.call_args_list[first_run_calls:]
-    assert [call.args[0] for call in second_run[:2]] == [
-        JobUsageStatus.RUNNING,
-        JobUsageStatus.RUNNING,
-    ]
-    assert second_run[-1].args[0] is JobUsageStatus.SUCCEEDED
+    first_call = provider.job_request.call_args_list[0]
+    assert first_call.args == ("PUT", "usage")
+    assert first_call.kwargs["json"] == {"status": "running", "elapsed_seconds": 0}
+    last_call = provider.job_request.call_args_list[-1]
+    assert last_call.kwargs["json"]["status"] == "succeeded"

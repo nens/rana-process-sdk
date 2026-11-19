@@ -1,6 +1,7 @@
 from .dataset import *
 from .exceptions import *
 from .files import *
+from .job_usage import *
 from .lizard_raster import *
 from .lizard_task import *
 from .personal_api_key import *

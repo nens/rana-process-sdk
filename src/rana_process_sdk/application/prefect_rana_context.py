@@ -1,13 +1,10 @@
 import shutil
-import threading
-import time
-from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
 from typing import Generic, TypeVar
 from uuid import UUID
 
-from pydantic import PrivateAttr, SecretStr
+from pydantic import SecretStr
 from threedi_api_client.files import download_file, upload_file
 
 from ..domain import (
@@ -22,17 +19,16 @@ from ..domain import (
 )
 from ..infrastructure import (
     SENTRY_BLOCK_NAME,
-    JobUsageStatus,
     LizardRasterLayerGateway,
     PrefectRanaRuntime,
     PrefectRanaSchematisationGateway,
     RanaDatasetGateway,
     RanaFileGateway,
-    RanaJobUsageGateway,
     RanaSchematisationGateway,
     SentryBlock,
     ThreediApiKeyGateway,
 )
+from .job_usage_heartbeat import JobUsageHeartbeat
 from .rana_context import RanaContext, transfer_extension
 from .schematisation import upload_schematisation
 from .types import RanaPath
@@ -41,26 +37,15 @@ __all__ = ["PrefectRanaContext"]
 
 T = TypeVar("T", bound=RanaProcessParameters)
 
-HEARTBEAT_INTERVAL_SECONDS = 60
-# Upper bound for waiting on an in-flight heartbeat when the job ends. The final report is sent regardless.
-STOP_TIMEOUT_SECONDS = 5
-
-
-@dataclass
-class _JobUsageRun:
-    """Job usage heartbeat state of one entry into the context."""
-
-    started_at: float = field(default_factory=time.monotonic)
-    stop_event: threading.Event = field(default_factory=threading.Event)
-    thread: threading.Thread | None = None
-
 
 class PrefectRanaContext(RanaContext[T], Generic[T]):
-    _job_usage_run: _JobUsageRun = PrivateAttr(default_factory=_JobUsageRun)
-
     @cached_property
     def _rana_runtime(self) -> PrefectRanaRuntime:
         return PrefectRanaRuntime()
+
+    @cached_property
+    def _job_usage_heartbeat(self) -> JobUsageHeartbeat:
+        return JobUsageHeartbeat(self.logger)
 
     @property
     def job_id(self) -> UUID:
@@ -85,10 +70,6 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
     @property
     def _rana_dataset_gateway(self) -> RanaDatasetGateway:
         return RanaDatasetGateway()
-
-    @property
-    def _job_usage_gateway(self) -> RanaJobUsageGateway:
-        return RanaJobUsageGateway()
 
     @property
     def _threedi_api_key_gateway(self) -> ThreediApiKeyGateway:
@@ -174,56 +155,13 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
         )
         return RanaPath(id=file_upload.id, ref=file_upload.ref)
 
-    def _report_job_usage(self, run: _JobUsageRun, outcome: JobUsageStatus) -> None:
-        try:
-            elapsed_seconds = int(time.monotonic() - run.started_at)
-            self._job_usage_gateway.report(outcome, elapsed_seconds)
-        except BaseException:
-            # BaseException too: a cancellation or interrupt during the report must not fail the run.
-            self._rana_runtime.logger.warning(
-                "Could not report job usage (%s)", outcome.value, exc_info=True
-            )
-
-    def _job_usage_heartbeat(self, run: _JobUsageRun) -> None:
-        while not run.stop_event.wait(HEARTBEAT_INTERVAL_SECONDS):
-            self._report_job_usage(run, JobUsageStatus.RUNNING)
-
-    def _start_job_usage_heartbeat(self) -> None:
-        run = self._job_usage_run
-        try:
-            thread = threading.Thread(
-                target=self._job_usage_heartbeat, args=(run,), daemon=True
-            )
-            thread.start()
-        except Exception:
-            # Without a heartbeat the final report is still sent, so the run goes on.
-            self._rana_runtime.logger.warning(
-                "Could not start job usage heartbeat", exc_info=True
-            )
-        else:
-            run.thread = thread
-
-    def _stop_job_usage_heartbeat(self, failed: bool) -> None:
-        run = self._job_usage_run
-        run.stop_event.set()
-        if run.thread is not None:
-            # A heartbeat in flight may be retrying; do not hold up the end of the run for it.
-            # The backend rejects a running report after the final one, so a late heartbeat is harmless.
-            run.thread.join(STOP_TIMEOUT_SECONDS)
-        self._report_job_usage(
-            run, JobUsageStatus.FAILED if failed else JobUsageStatus.SUCCEEDED
-        )
-
     def __enter__(self) -> None:
         self._rana_runtime.create_progress()
         self.job_working_dir.mkdir(mode=0o0700, exist_ok=True)
-        # Fresh state per entry, so a context entered again heartbeats with its own run.
-        self._job_usage_run = _JobUsageRun()
-        self._start_job_usage_heartbeat()
+        # Start the heartbeat last: if an earlier step fails, __exit__ never runs and the heartbeat would not stop.
+        self._job_usage_heartbeat.start()
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:  # type: ignore
-        # Report the final job usage before Prefect sets the final state of the run.
-        # The run fails when the body raises or when the cleanup below raises, so it is reported as failed too.
         failed = exc_type is not None
         try:
             if self.job_working_dir.is_dir():
@@ -235,7 +173,7 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
             failed = True
             raise
         finally:
-            self._stop_job_usage_heartbeat(failed=failed)
+            self._job_usage_heartbeat.stop(failed=failed)
 
     def setup_logger(self) -> None:
         try:
