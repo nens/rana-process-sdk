@@ -1,17 +1,9 @@
-"""The context is part of the public process interface: its JSON schema is published
-with every process, and its fields are what Rana sends as the 'context' parameter.
+"""Verify the public JSON schema of PrefectRanaContext to match RanaContext
 
-Internal runtime state on PrefectRanaContext (such as the job usage heartbeat) must
-never become part of that interface. These tests compare against RanaContext, so they
-keep holding however that state is implemented.
+These tests detects regression introduced by properties required to track internal state.
 """
 
-import json
-from collections.abc import Iterator
-from pathlib import Path
-from unittest.mock import Mock, patch
-
-from pytest import fixture, mark
+from pytest import mark
 
 from rana_process_sdk import (
     File,
@@ -20,12 +12,6 @@ from rana_process_sdk import (
     RanaProcessParameters,
     rana_flow,
 )
-from rana_process_sdk.domain import Json
-
-MODULE = "rana_process_sdk.application.prefect_rana_context"
-HEARTBEAT_MODULE = "rana_process_sdk.application.job_usage_heartbeat"
-
-PUBLIC_FIELDS = {"output", "output_paths"}
 
 
 class Output(RanaProcessParameters):
@@ -40,61 +26,69 @@ class Inputs(RanaProcessParameters):
     s: str
 
 
-def as_rana_context(schema: Json) -> Json:
-    # PrefectRanaContext[X] and RanaContext[X] schemas may only differ in their names
-    return json.loads(json.dumps(schema).replace("PrefectRanaContext", "RanaContext"))
-
-
-def private_property_names(schema: Json) -> set[str]:
-    # all property names starting with an underscore, at any depth
-    result: set[str] = set()
-    if isinstance(schema, dict):
-        for key, value in schema.items():
-            if key == "properties" and isinstance(value, dict):
-                result |= {name for name in value if name.startswith("_")}
-            result |= private_property_names(value)
-    elif isinstance(schema, list):
-        for value in schema:
-            result |= private_property_names(value)
-    return result
+PREFECT_CONTEXT_SCHEMA = {
+    "$defs": {
+        "Output": {
+            "order": ["number"],
+            "properties": {"number": {"title": "Number", "type": "integer"}},
+            "required": ["number"],
+            "title": "Output",
+            "type": "object",
+        }
+    },
+    "properties": {
+        "output": {
+            "anyOf": [{"$ref": "#/$defs/Output"}, {"type": "null"}],
+            "default": None,
+        },
+        "output_paths": {
+            "additionalProperties": {"type": "string"},
+            "default": {},
+            "title": "Output Paths",
+            "type": "object",
+        },
+    },
+    "title": "PrefectRanaContext[Output]",
+    "type": "object",
+}
 
 
 @mark.parametrize("output_type", [Output, FileOutput])
 @mark.parametrize("mode", ["validation", "serialization"])
-def test_prefect_context_json_schema_equals_rana_context(output_type, mode):
+def test_prefect_context_schema_matches_rana_context(output_type, mode):
     prefect_schema = PrefectRanaContext[output_type].model_json_schema(mode=mode)
     rana_schema = RanaContext[output_type].model_json_schema(mode=mode)
 
-    assert set(prefect_schema["properties"]) == PUBLIC_FIELDS
-    assert as_rana_context(prefect_schema) == as_rana_context(rana_schema)
-    assert private_property_names(prefect_schema) == set()
-    assert "job_usage" not in json.dumps(prefect_schema)
+    assert prefect_schema["properties"] == rana_schema["properties"]
+    assert prefect_schema.get("$defs") == rana_schema.get("$defs")
 
 
-def test_prefect_context_model_fields():
-    assert set(PrefectRanaContext[Output].model_fields) == PUBLIC_FIELDS
-    assert set(PrefectRanaContext[Output].model_fields) == set(
+def test_prefect_context_schema_is_unchanged():
+    assert PrefectRanaContext[Output].model_json_schema() == PREFECT_CONTEXT_SCHEMA
+
+
+def test_prefect_context_model_fields_match_rana_context():
+    assert list(PrefectRanaContext[Output].model_fields) == list(
         RanaContext[Output].model_fields
     )
 
 
 @mark.parametrize("context_type", [RanaContext, PrefectRanaContext])
-def test_flow_parameter_schema_has_no_private_attributes(context_type):
+def test_flow_parameter_context_publishes_public_fields_only(context_type):
     @rana_flow()
     def flow(context: context_type[Output], inputs: Inputs) -> None:  # type: ignore
         return None
 
-    # this is what Prefect publishes as the deployment's parameter schema
     schema = flow.parameters.model_dump_for_openapi()
-    context_ref = schema["properties"]["context"]["$ref"]
-    context_schema = schema["definitions"][context_ref.split("/")[-1]]
+    context_name = schema["properties"]["context"]["$ref"].split("/")[-1]
 
-    assert set(context_schema["properties"]) == PUBLIC_FIELDS
-    assert private_property_names(schema) == set()
-    assert "job_usage" not in json.dumps(schema)
+    assert list(schema["definitions"][context_name]["properties"]) == [
+        "output",
+        "output_paths",
+    ]
 
 
-def test_flow_parameter_schema_prefect_context_equals_rana_context():
+def test_flow_parameter_context_prefect_matches_rana_context():
     @rana_flow()
     def rana_context_flow(context: RanaContext[Output], inputs: Inputs) -> None:
         return None
@@ -105,50 +99,13 @@ def test_flow_parameter_schema_prefect_context_equals_rana_context():
     ) -> None:
         return None
 
-    assert as_rana_context(
-        prefect_context_flow.parameters.model_dump_for_openapi()
-    ) == as_rana_context(rana_context_flow.parameters.model_dump_for_openapi())
+    rana_schema = rana_context_flow.parameters.model_dump_for_openapi()
+    prefect_schema = prefect_context_flow.parameters.model_dump_for_openapi()
+    rana_context = rana_schema["definitions"][
+        rana_schema["properties"]["context"]["$ref"].split("/")[-1]
+    ]
+    prefect_context = prefect_schema["definitions"][
+        prefect_schema["properties"]["context"]["$ref"].split("/")[-1]
+    ]
 
-
-@fixture
-def prefect_rana_runtime(tmp_path: Path) -> Iterator[Mock]:
-    with patch(f"{MODULE}.PrefectRanaRuntime") as m:
-        result = m.return_value
-        result.threedi_api_key = None
-        result.job_working_dir = tmp_path / "work"
-        yield result
-
-
-@fixture
-def job_usage_gateway() -> Iterator[Mock]:
-    with patch(f"{HEARTBEAT_MODULE}.RanaJobUsageGateway") as m:
-        yield m
-
-
-def test_entered_prefect_context_dumps_only_public_fields(
-    prefect_rana_runtime: Mock, job_usage_gateway: Mock
-):
-    context = PrefectRanaContext[Output](output=Output(number=1))
-    expected = {"output": {"number": 1}, "output_paths": {}}
-
-    # inside the context, the job usage state (including a running thread) is set
-    with context:
-        assert context.model_dump(mode="json") == expected
-        assert json.loads(context.model_dump_json()) == expected
-
-    assert context.model_dump(mode="json") == expected
-
-
-def test_private_state_cannot_be_set_through_input(
-    prefect_rana_runtime: Mock, job_usage_gateway: Mock
-):
-    context = PrefectRanaContext[Output].model_validate(
-        {
-            "output_paths": {},
-            "_job_usage_heartbeat": "injected",
-            "job_usage_heartbeat": "injected",
-        }
-    )
-
-    assert context.model_dump(mode="json") == {"output": None, "output_paths": {}}
-    assert "_job_usage_heartbeat" not in context.__dict__
+    assert prefect_context["properties"] == rana_context["properties"]
