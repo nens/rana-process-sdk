@@ -8,6 +8,7 @@ from .prefect_rana_runtime import *
 from .rana_api_provider import *
 from .rana_dataset_gateway import *
 from .rana_file_gateway import *
+from .rana_job_usage_gateway import *
 from .rana_runtime import *
 from .rana_schematisation_gateway import *
 from .sentry_prefect_integration import *

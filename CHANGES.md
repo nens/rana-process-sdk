@@ -4,7 +4,8 @@
 ## 0.23 (unreleased)
 
 
-- Nothing changed yet.
+- Support reporting process time to Rana. Add a heartbeat every 60 seconds while the process is running,
+  Also a final succeeded or failed outcome before the run ends. Reporting failures are logged and never fail the process.
 
 
 ## 0.22 (2026-11-10)
