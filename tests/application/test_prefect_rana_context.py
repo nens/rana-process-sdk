@@ -43,7 +43,6 @@ from rana_process_sdk.infrastructure import (
     PrefectRanaRuntime,
     RanaDatasetGateway,
     RanaFileGateway,
-    RanaJobUsageGateway,
     RanaSchematisationGateway,
     SentryBlock,
     ThreediApiKeyGateway,
