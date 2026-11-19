@@ -1,7 +1,6 @@
 from enum import StrEnum
 
-from clean_python import ValueObject
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 __all__ = ["JobUsageStatus", "JobUsageReport"]
 
@@ -12,7 +11,7 @@ class JobUsageStatus(StrEnum):
     FAILED = "failed"
 
 
-class JobUsageReport(ValueObject):
+class JobUsageReport(BaseModel):
     status: JobUsageStatus
     elapsed_seconds: int = Field(
         ge=0, description="Cumulative seconds since the job started running"

@@ -1,12 +1,10 @@
-from clean_python import Mapper
-
 from ..domain import JobUsageReport, Json
 from .rana_api_provider import PrefectRanaApiProvider
 
 __all__ = ["RanaJobUsageGateway"]
 
 
-class JobUsageMapper(Mapper):
+class JobUsageMapper:
     def to_external(self, internal: Json) -> Json:
         return {
             "status": internal["status"],
