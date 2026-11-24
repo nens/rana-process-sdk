@@ -28,6 +28,7 @@ from ..infrastructure import (
     SentryBlock,
     ThreediApiKeyGateway,
 )
+from .job_usage_heartbeat import JobUsageHeartbeat
 from .rana_context import RanaContext, transfer_extension
 from .schematisation import upload_schematisation
 from .types import RanaPath
@@ -41,6 +42,10 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
     @cached_property
     def _rana_runtime(self) -> PrefectRanaRuntime:
         return PrefectRanaRuntime()
+
+    @cached_property
+    def _job_usage_heartbeat(self) -> JobUsageHeartbeat:
+        return JobUsageHeartbeat(self.logger)
 
     @property
     def job_id(self) -> UUID:
@@ -153,13 +158,22 @@ class PrefectRanaContext(RanaContext[T], Generic[T]):
     def __enter__(self) -> None:
         self._rana_runtime.create_progress()
         self.job_working_dir.mkdir(mode=0o0700, exist_ok=True)
+        # Start the heartbeat last: if an earlier step fails, __exit__ never runs and the heartbeat would not stop.
+        self._job_usage_heartbeat.start()
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:  # type: ignore
-        if self.job_working_dir.is_dir():
-            shutil.rmtree(self.job_working_dir)
-        if key := self._rana_runtime.threedi_api_key:
-            self.threedi_remove_api_key(key)
-        self._rana_runtime.set_progress(100, "Completed", True)
+        failed = exc_type is not None
+        try:
+            if self.job_working_dir.is_dir():
+                shutil.rmtree(self.job_working_dir)
+            if key := self._rana_runtime.threedi_api_key:
+                self.threedi_remove_api_key(key)
+            self._rana_runtime.set_progress(100, "Completed", True)
+        except BaseException:
+            failed = True
+            raise
+        finally:
+            self._job_usage_heartbeat.stop(failed=failed)
 
     def setup_logger(self) -> None:
         try:

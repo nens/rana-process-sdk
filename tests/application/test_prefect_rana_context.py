@@ -1,5 +1,8 @@
+from asyncio import CancelledError
 from collections.abc import Iterator
 from pathlib import Path
+from threading import Event, Thread
+from time import monotonic, sleep
 from unittest.mock import Mock, PropertyMock, patch
 from uuid import UUID
 
@@ -20,6 +23,8 @@ from rana_process_sdk.domain import (
     FileStat,
     FileUpload,
     History,
+    JobUsageReport,
+    JobUsageStatus,
     ProcessUserError,
     ThreediApiKey,
 )
@@ -44,6 +49,7 @@ from rana_process_sdk.infrastructure import (
 )
 
 MODULE = "rana_process_sdk.application.prefect_rana_context"
+HEARTBEAT_MODULE = "rana_process_sdk.application.job_usage_heartbeat"
 
 
 class Output(RanaProcessParameters):
@@ -81,6 +87,12 @@ class RasterOutput(RanaProcessParameters):
 class MultipleFileOutput(RanaProcessParameters):
     x: File
     y: File
+
+
+@fixture(autouse=True)
+def job_usage_gateway() -> Iterator[Mock]:
+    with patch(f"{HEARTBEAT_MODULE}.RanaJobUsageGateway") as m:
+        yield m
 
 
 @fixture
@@ -466,6 +478,25 @@ def test_context_manager_workdir_deleted(
         prefect_rana_runtime.job_working_dir.rmdir()
 
 
+def test_context_manager_workdir_creation_failure_does_not_start_heartbeat(
+    rana_context: PrefectRanaContext,
+    prefect_rana_runtime: PrefectRanaRuntime,
+    job_usage_gateway: Mock,
+    job_working_dir: Path,
+):
+    blocked = job_working_dir / "blocked"
+    blocked.touch()
+    prefect_rana_runtime.job_working_dir = blocked
+
+    with patch(f"{HEARTBEAT_MODULE}.threading.Thread") as thread_class:
+        with raises(FileExistsError):
+            with rana_context:
+                pass
+
+    thread_class.assert_not_called()
+    job_usage_gateway.return_value.report.assert_not_called()
+
+
 @fixture
 def threedi_api_key() -> ThreediApiKey:
     return ThreediApiKey(
@@ -716,3 +747,200 @@ def test_get_dataset(
 
     rana_dataset_gateway.get.assert_called_once_with("DatasetId")
     rana_dataset_gateway.get_data_links.assert_called_once_with("DatasetId")
+
+
+def test_context_manager_reports_job_usage(
+    rana_context: PrefectRanaContext,
+    job_usage_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    with rana_context:
+        pass
+
+    report = job_usage_gateway.return_value.report
+    assert [call.args[0].status for call in report.call_args_list] == [
+        JobUsageStatus.RUNNING,
+        JobUsageStatus.SUCCEEDED,
+    ]
+
+
+def test_context_manager_reports_failed_job_usage(
+    rana_context: PrefectRanaContext,
+    job_usage_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    with raises(ValueError), rana_context:
+        raise ValueError("error")
+
+    report = job_usage_gateway.return_value.report
+    assert [call.args[0].status for call in report.call_args_list] == [
+        JobUsageStatus.RUNNING,
+        JobUsageStatus.FAILED,
+    ]
+
+
+def test_context_manager_reports_cancelled_job_usage_as_failed(
+    rana_context: PrefectRanaContext,
+    job_usage_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    with raises(CancelledError), rana_context:
+        raise CancelledError()
+
+    report = job_usage_gateway.return_value.report
+    assert [call.args[0].status for call in report.call_args_list] == [
+        JobUsageStatus.RUNNING,
+        JobUsageStatus.FAILED,
+    ]
+
+
+def test_context_manager_cleanup_error_reports_failed_job_usage(
+    rana_context: PrefectRanaContext,
+    job_usage_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    prefect_rana_runtime.set_progress.side_effect = RuntimeError("Prefect API down")
+
+    with raises(RuntimeError), rana_context:
+        pass
+
+    report = job_usage_gateway.return_value.report
+    assert [call.args[0].status for call in report.call_args_list] == [
+        JobUsageStatus.RUNNING,
+        JobUsageStatus.FAILED,
+    ]
+
+
+def test_context_manager_job_usage_report_base_exception_does_not_fail_the_run(
+    rana_context: PrefectRanaContext,
+    job_usage_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    job_usage_gateway.return_value.report.side_effect = CancelledError()
+
+    with rana_context:
+        pass
+
+    prefect_rana_runtime.set_progress.assert_called_once_with(100, "Completed", True)
+
+
+def test_context_manager_failed_job_usage_report_does_not_fail_the_run(
+    rana_context: PrefectRanaContext,
+    job_usage_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    job_usage_gateway.return_value.report.side_effect = RuntimeError("Rana API down")
+
+    with rana_context:
+        pass
+
+    prefect_rana_runtime.set_progress.assert_called_once_with(100, "Completed", True)
+
+
+def test_context_manager_heartbeat_reports_running_until_exit(
+    rana_context: PrefectRanaContext,
+    job_usage_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    report = job_usage_gateway.return_value.report
+
+    with patch(f"{HEARTBEAT_MODULE}.HEARTBEAT_INTERVAL_SECONDS", 0.01):
+        with rana_context:
+            deadline = monotonic() + 5
+            while report.call_count < 2 and monotonic() < deadline:
+                sleep(0.001)
+
+    statuses = [call.args[0].status for call in report.call_args_list]
+    assert len(statuses) >= 2
+    assert all(status is JobUsageStatus.RUNNING for status in statuses[:-1])
+    assert statuses[-1] is JobUsageStatus.SUCCEEDED
+
+    count = report.call_count
+    sleep(0.05)
+    assert report.call_count == count
+
+
+def test_context_manager_heartbeat_start_failure_does_not_fail_the_run(
+    rana_context: PrefectRanaContext,
+    job_usage_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    with patch.object(
+        Thread, "start", side_effect=RuntimeError("can't start new thread")
+    ):
+        with rana_context:
+            pass
+
+    prefect_rana_runtime.logger.warning.assert_called_once()
+    report = job_usage_gateway.return_value.report
+    report.assert_called_once_with(
+        JobUsageReport(status=JobUsageStatus.SUCCEEDED, elapsed_seconds=0)
+    )
+
+
+def test_context_manager_job_usage_report_failure_is_logged(
+    rana_context: PrefectRanaContext,
+    job_usage_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    job_usage_gateway.return_value.report.side_effect = RuntimeError("Rana API down")
+
+    with raises(ValueError), rana_context:
+        raise ValueError("boom")
+
+    # the heartbeat thread is joined on exit, so both reports have been attempted
+    logger = prefect_rana_runtime.logger
+    assert logger.warning.call_count == 2
+    assert [call.args[1] for call in logger.warning.call_args_list] == [
+        "running",
+        "failed",
+    ]
+    assert logger.warning.call_args.kwargs == {"exc_info": True}
+
+
+def test_context_manager_exit_does_not_wait_for_a_hanging_heartbeat(
+    rana_context: PrefectRanaContext,
+    job_usage_gateway: Mock,
+    prefect_rana_runtime: Mock,
+    threedi_api_key_gateway: Mock,
+    job_working_dir: Path,
+):
+    heartbeat_started = Event()
+    release = Event()
+    report = job_usage_gateway.return_value.report
+
+    def hanging_report(report: JobUsageReport) -> None:
+        if report.status is JobUsageStatus.RUNNING:
+            heartbeat_started.set()
+            release.wait()
+
+    report.side_effect = hanging_report
+    with (
+        patch(f"{HEARTBEAT_MODULE}.HEARTBEAT_INTERVAL_SECONDS", 0.01),
+        patch(f"{HEARTBEAT_MODULE}.STOP_TIMEOUT_SECONDS", 0.05),
+    ):
+        with rana_context:
+            assert heartbeat_started.wait(5)
+            started = monotonic()
+        assert monotonic() - started < 2
+
+    release.set()
+    assert report.call_args.args[0].status is JobUsageStatus.SUCCEEDED
