@@ -1,7 +1,7 @@
 # Changelog of rana-process-sdk
 
 
-## 0.23 (unreleased)
+## 0.23 (2026-11-25)
 
 
 - Support reporting process time to Rana. Add a heartbeat every 60 seconds while the process is running,
